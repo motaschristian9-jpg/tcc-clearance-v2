@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -23,8 +23,11 @@ import {
   Award,
   Layers,
   FileCheck2,
+  RefreshCw,
 } from 'lucide-react';
 import { DayAttendance } from '@/types/attendance';
+import { fetchPublishedEvents } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
 export interface ClearanceActivity {
   id: string;
@@ -64,9 +67,29 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 }) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'ongoing' | 'upcoming'>('all');
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
 
-  // Real calculation of Intramurals cleared slots directly from attendanceRecords
-  const intramuralsCleared = attendanceRecords.reduce((acc, curr) => {
+  // Real activities loaded from database (zero mock items by default)
+  const [activities, setActivities] = useState<ClearanceActivity[]>([]);
+
+  const loadEvents = async () => {
+    setIsLoadingEvents(true);
+    try {
+      const liveEvents = await fetchPublishedEvents(department);
+      setActivities(liveEvents);
+    } catch (err) {
+      console.warn('Failed to load events:', err);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEvents();
+  }, [department]);
+
+  // Real calculation of cleared slots directly from attendanceRecords
+  const totalClearedSlots = attendanceRecords.reduce((acc, curr) => {
     let count = 0;
     if (curr.slots['morning-in']) count++;
     if (curr.slots['morning-out']) count++;
@@ -75,7 +98,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     return acc + count;
   }, 0);
 
-  // Extract any actual recorded stamps
+  // Extract actual recorded stamps
   const recentStamps: { day: string; slotLabel: string; time: string; date: string }[] = [];
   attendanceRecords.forEach((rec) => {
     if (rec.slots['afternoon-out']) recentStamps.push({ day: rec.day, slotLabel: 'Afternoon Out', time: rec.slots['afternoon-out'], date: rec.date });
@@ -83,42 +106,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     if (rec.slots['morning-out']) recentStamps.push({ day: rec.day, slotLabel: 'Morning Out', time: rec.slots['morning-out'], date: rec.date });
     if (rec.slots['morning-in']) recentStamps.push({ day: rec.day, slotLabel: 'Morning In', time: rec.slots['morning-in'], date: rec.date });
   });
-
-  const [activities, setActivities] = useState<ClearanceActivity[]>([
-    {
-      id: 'cit-intramurals-2026',
-      title: `${department} Intramurals 2026`,
-      category: '5-Day College Event',
-      dateRange: 'Nov 10 – Nov 14, 2026',
-      venue: 'TCC Gymnasium & Sports Complex',
-      totalSlots: 20,
-      clearedSlots: intramuralsCleared,
-      status: 'ongoing',
-      isDownloadedOffline: true,
-    },
-    {
-      id: 'cit-general-assembly',
-      title: `${department} General Assembly`,
-      category: 'Department Assembly',
-      dateRange: 'Dec 05, 2026 · 08:00 AM',
-      venue: 'TCC Audio-Visual Room (AVR)',
-      totalSlots: 2,
-      clearedSlots: 0,
-      status: 'upcoming',
-      isDownloadedOffline: false,
-    },
-    {
-      id: 'academic-clearance-2026',
-      title: '2nd Sem Academic Clearance 2025-2026',
-      category: 'Semester Clearance',
-      dateRange: 'March 18 – March 22, 2026',
-      venue: 'Registrar & Department Offices',
-      totalSlots: 4,
-      clearedSlots: 0,
-      status: 'upcoming',
-      isDownloadedOffline: false,
-    },
-  ]);
 
   const handleDownloadPack = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -136,7 +123,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     return act.status === filter;
   });
 
-  const overallCleared = intramuralsCleared;
+  const overallCleared = totalClearedSlots;
   const overallTotal = activities.reduce((acc, a) => acc + a.totalSlots, 0);
   const overallPercent = overallTotal > 0 ? Math.round((overallCleared / overallTotal) * 100) : 0;
 
@@ -187,10 +174,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="p-3 rounded-lg bg-muted/30 border border-border/60">
               <span className="text-[11px] text-muted-foreground block">Clearance Progress</span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-bold text-foreground">{overallPercent}%</span>
-                <span className="text-[11px] text-muted-foreground font-mono">
-                  ({overallCleared}/{overallTotal})
-                </span>
+                {overallTotal > 0 ? (
+                  <>
+                    <span className="text-lg font-bold text-foreground">{overallPercent}%</span>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      ({overallCleared}/{overallTotal})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs font-medium text-muted-foreground pt-1">
+                    No active events
+                  </span>
+                )}
               </div>
             </div>
 
@@ -229,151 +224,173 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   </CardDescription>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="flex items-center gap-1 p-0.5 rounded-lg border border-border bg-muted/30 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setFilter('all')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                      filter === 'all'
-                        ? 'bg-background text-foreground shadow-xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    All ({activities.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilter('ongoing')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                      filter === 'ongoing'
-                        ? 'bg-background text-foreground shadow-xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Ongoing
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilter('upcoming')}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                      filter === 'upcoming'
-                        ? 'bg-background text-foreground shadow-xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Upcoming
-                  </button>
-                </div>
+                {activities.length > 0 && (
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg border border-border bg-muted/30 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setFilter('all')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                        filter === 'all'
+                          ? 'bg-background text-foreground shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      All ({activities.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFilter('ongoing')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                        filter === 'ongoing'
+                          ? 'bg-background text-foreground shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Ongoing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFilter('upcoming')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                        filter === 'upcoming'
+                          ? 'bg-background text-foreground shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Upcoming
+                    </button>
+                  </div>
+                )}
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* Responsive Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredActivities.map((activity) => {
-                  const currentCleared =
-                    activity.id === 'cit-intramurals-2026' ? intramuralsCleared : activity.clearedSlots;
-                  const percent =
-                    activity.totalSlots > 0
-                      ? Math.round((currentCleared / activity.totalSlots) * 100)
-                      : 0;
+              {filteredActivities.length > 0 ? (
+                /* Responsive Cards Grid when real events exist */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredActivities.map((activity) => {
+                    const currentCleared = activity.clearedSlots;
+                    const percent =
+                      activity.totalSlots > 0
+                        ? Math.round((currentCleared / activity.totalSlots) * 100)
+                        : 0;
 
-                  return (
-                    <div
-                      key={activity.id}
-                      className="group p-4 rounded-xl border border-border bg-card hover:border-foreground/30 hover:shadow-sm transition-all flex flex-col justify-between space-y-4"
-                    >
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider ${
-                              activity.status === 'ongoing'
-                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                : 'bg-muted text-muted-foreground border border-border'
-                            }`}
-                          >
-                            {activity.status}
-                          </span>
-                          {activity.isDownloadedOffline ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-medium font-mono">
-                              <CheckCircle2 className="size-3" />
-                              Offline Ready
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={downloadingId === activity.id}
-                              onClick={(e) => handleDownloadPack(e, activity.id)}
-                              className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
+                    return (
+                      <div
+                        key={activity.id}
+                        className="group p-4 rounded-xl border border-border bg-card hover:border-foreground/30 hover:shadow-sm transition-all flex flex-col justify-between space-y-4"
+                      >
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider ${
+                                activity.status === 'ongoing'
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-muted text-muted-foreground border border-border'
+                              }`}
                             >
-                              <Download className="size-3" />
-                              <span>{downloadingId === activity.id ? 'Saving...' : 'Save Pack'}</span>
-                            </button>
-                          )}
+                              {activity.status}
+                            </span>
+                            {activity.isDownloadedOffline ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-medium font-mono">
+                                <CheckCircle2 className="size-3" />
+                                Offline Ready
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={downloadingId === activity.id}
+                                onClick={(e) => handleDownloadPack(e, activity.id)}
+                                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
+                              >
+                                <Download className="size-3" />
+                                <span>{downloadingId === activity.id ? 'Saving...' : 'Save Pack'}</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <span className="text-[11px] text-muted-foreground">
+                              {activity.category}
+                            </span>
+                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
+                              {activity.title}
+                            </h3>
+                          </div>
+
+                          <div className="space-y-1.5 text-xs text-muted-foreground pt-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="size-3.5 shrink-0 text-muted-foreground" />
+                              <span>{activity.dateRange}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                              <span className="truncate">{activity.venue}</span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div>
-                          <span className="text-[11px] text-muted-foreground">
-                            {activity.category}
-                          </span>
-                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
-                            {activity.title}
-                          </h3>
-                        </div>
+                        <div className="space-y-3 pt-2 border-t border-border/60">
+                          <div>
+                            <div className="flex items-center justify-between text-xs mb-1.5">
+                              <span className="text-muted-foreground flex items-center gap-1">
+                                <Clock className="size-3 text-muted-foreground" />
+                                Required Stamps
+                              </span>
+                              <span className="font-medium text-foreground font-mono">
+                                {currentCleared}/{activity.totalSlots} Slots ({percent}%)
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full bg-foreground transition-all duration-300"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </div>
 
-                        {/* Schedule & Venue */}
-                        <div className="space-y-1.5 text-xs text-muted-foreground pt-1">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="size-3.5 shrink-0 text-muted-foreground" />
-                            <span>{activity.dateRange}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{activity.venue}</span>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onViewActivityCard(activity.id)}
+                            className="w-full h-9 text-xs font-medium justify-between group-hover:border-foreground/40 cursor-pointer"
+                          >
+                            <span>Open Clearance Card</span>
+                            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+                          </Button>
                         </div>
                       </div>
-
-                      <div className="space-y-3 pt-2 border-t border-border/60">
-                        {/* Slots Progress Bar */}
-                        <div>
-                          <div className="flex items-center justify-between text-xs mb-1.5">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                              <Clock className="size-3 text-muted-foreground" />
-                              Required Stamps
-                            </span>
-                            <span className="font-medium text-foreground font-mono">
-                              {currentCleared}/{activity.totalSlots} Slots ({percent}%)
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full bg-foreground transition-all duration-300"
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Open Action */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onViewActivityCard(activity.id)}
-                          className="w-full h-9 text-xs font-medium justify-between group-hover:border-foreground/40 cursor-pointer"
-                        >
-                          <span>Open Clearance Card</span>
-                          <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Clean Empty State when no events exist in database */
+                <div className="py-12 px-4 text-center border border-dashed border-border rounded-xl bg-muted/10 space-y-3">
+                  <Calendar className="size-8 mx-auto text-muted-foreground/40" />
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-sm text-foreground">
+                      No Clearance Activities Scheduled
+                    </h3>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                      There are currently no active clearance events published for {department}. When an event is scheduled by your department SBO, it will appear here.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadEvents}
+                    disabled={isLoadingEvents}
+                    className="h-8 text-xs cursor-pointer gap-1.5"
+                  >
+                    <RefreshCw className={cn("size-3.5", isLoadingEvents && "animate-spin")} />
+                    <span>{isLoadingEvents ? 'Checking...' : 'Check for Updates'}</span>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Recent Attendance Stamps Record */}
+          {/* Attendance Stamp History Record */}
           <Card className="border border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">

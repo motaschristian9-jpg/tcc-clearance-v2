@@ -287,4 +287,38 @@ export async function rebindStudentDevice(studentId: string): Promise<boolean> {
   }
 }
 
+/**
+ * Fetches real published clearance events from Supabase for a student's department
+ */
+export async function fetchPublishedEvents(department: string) {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  try {
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('status', 'published');
+
+    if (error || !events || events.length === 0) {
+      return [];
+    }
+
+    return events.map((ev: { id: string; name: string; description?: string; school_year?: string; status?: string }) => ({
+      id: ev.id,
+      title: ev.name,
+      category: ev.description || `${department} Clearance`,
+      dateRange: 'School Year ' + (ev.school_year || '2025-2026'),
+      venue: 'TCC Campus',
+      totalSlots: 20,
+      clearedSlots: 0,
+      status: 'ongoing' as const,
+      isDownloadedOffline: false,
+    }));
+  } catch (err) {
+    console.warn('Failed to fetch events from Supabase:', err);
+    return [];
+  }
+}
+
 export type { User, Session };
