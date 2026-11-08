@@ -144,7 +144,7 @@ export const StudentDetailsCard: React.FC<StudentDetailsCardProps> = ({
   };
 
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-xl mx-auto py-4">
       <Card className="border border-border shadow-sm">
         <form onSubmit={handleSubmit} noValidate>
           <CardHeader className="text-center pb-4">
@@ -300,6 +300,6 @@ export const StudentDetailsCard: React.FC<StudentDetailsCardProps> = ({
           </CardFooter>
         </form>
       </Card>
-    </main>
+    </div>
   );
 };

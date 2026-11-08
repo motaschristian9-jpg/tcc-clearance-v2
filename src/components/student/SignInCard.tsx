@@ -64,7 +64,7 @@ export const SignInCard: React.FC<SignInCardProps> = () => {
   };
 
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-md mx-auto py-6">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-center pb-6">
           <CardTitle className="text-2xl font-semibold tracking-tight text-foreground">
@@ -190,6 +190,6 @@ export const SignInCard: React.FC<SignInCardProps> = () => {
           </p>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };

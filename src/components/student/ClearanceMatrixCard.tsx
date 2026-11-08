@@ -2,13 +2,12 @@ import React from 'react';
 import {
   Card,
   CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, CheckCircle2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Download, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { DayAttendance } from '@/types/attendance';
 
 interface ClearanceMatrixCardProps {
@@ -36,122 +35,199 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
     return acc + count;
   }, 0);
 
+  const percent = Math.round((clearedSlotsCount / totalSlots) * 100);
+
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
-      <Card className="border border-border shadow-sm">
-        <CardHeader className="text-center pb-4">
-          <div className="flex items-center justify-between pb-1">
-            <button
+    <div className="w-full space-y-6">
+      {/* Top Navigation & Header - Full Width */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-6 rounded-xl border border-border bg-card shadow-sm">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onBack}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              className="h-8 px-2.5 text-xs gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="size-3.5" />
               <span>Dashboard</span>
-            </button>
-            <span className="text-[11px] font-mono text-muted-foreground">
-              {clearedSlotsCount}/{totalSlots} Cleared
+            </Button>
+            <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
+              Official Clearance Activity Card
             </span>
           </div>
 
-          <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground block">
-            Official Clearance Card
-          </span>
-          <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
-            CIT Intramurals 2026
-          </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">
-            {fullName || 'Student'} · {section || '3A'} · ID {schoolId || '20241373'}
-          </CardDescription>
-        </CardHeader>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground pt-1">
+            CIT Intramurals 2026 Clearance Card
+          </h1>
+          <p className="text-xs text-muted-foreground font-mono">
+            Student: <span className="font-semibold text-foreground font-sans">{fullName}</span> · ID: {schoolId} · Section: {section}
+          </p>
+        </div>
 
-        <CardContent className="flex flex-col gap-3">
-          {attendanceRecords.map((item) => {
-            const isDayCleared =
-              !!item.slots['morning-in'] &&
-              !!item.slots['morning-out'] &&
-              !!item.slots['afternoon-in'] &&
-              !!item.slots['afternoon-out'];
+        {/* Progress & Export Buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="px-3 py-1.5 rounded-lg border border-border bg-muted/30 text-right">
+            <span className="text-[10px] text-muted-foreground block uppercase font-medium">Clearance Progress</span>
+            <span className="font-mono text-xs font-semibold text-foreground">
+              {clearedSlotsCount}/{totalSlots} Slots ({percent}%)
+            </span>
+          </div>
 
-            const hasAnySlot =
-              !!item.slots['morning-in'] ||
-              !!item.slots['morning-out'] ||
-              !!item.slots['afternoon-in'] ||
-              !!item.slots['afternoon-out'];
-
-            const slotItems = [
-              { label: 'M-In', value: item.slots['morning-in'] },
-              { label: 'M-Out', value: item.slots['morning-out'] },
-              { label: 'A-In', value: item.slots['afternoon-in'] },
-              { label: 'A-Out', value: item.slots['afternoon-out'] },
-            ];
-
-            return (
-              <div
-                key={item.day}
-                className={`border border-border rounded-lg p-2.5 text-xs flex flex-col gap-1.5 ${
-                  isDayCleared
-                    ? 'bg-emerald-500/5 border-emerald-500/20'
-                    : hasAnySlot
-                    ? 'bg-muted/20 border-border/80'
-                    : 'bg-muted/10'
-                }`}
-              >
-                <div className="flex items-center justify-between font-medium">
-                  <span className="font-semibold text-foreground text-xs">
-                    {item.day} · {item.date}
-                  </span>
-                  {isDayCleared ? (
-                    <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="size-3" />
-                      <span>Cleared</span>
-                    </span>
-                  ) : hasAnySlot ? (
-                    <span className="text-[10px] text-amber-600 font-medium">In Progress</span>
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground font-normal">Upcoming</span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-1 font-mono text-[10px] text-muted-foreground">
-                  {slotItems.map((s, idx) => (
-                    <div
-                      key={idx}
-                      className={`px-2 py-0.5 rounded truncate ${
-                        s.value
-                          ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-medium'
-                          : 'bg-muted/30'
-                      }`}
-                    >
-                      {s.label}: {s.value ? `${s.value} ✓` : 'Pending'}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-
-        <CardFooter className="flex flex-col gap-2 pt-2">
           <Button
             type="button"
-            variant="outline"
-            onClick={() => alert(`Exporting CIT Intramurals Clearance Card for ${fullName}...`)}
-            className="w-full h-10 text-xs font-medium gap-2 cursor-pointer"
+            onClick={() => alert(`Exporting CIT Intramurals Clearance Card PDF for ${fullName}...`)}
+            className="h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs"
           >
             <Download className="size-3.5" />
-            <span>Export Activity Card (PDF)</span>
+            <span>Export PDF</span>
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onBack}
-            className="w-full h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            Back to Dashboard
-          </Button>
-        </CardFooter>
+        </div>
+      </div>
+
+      {/* 5-Day Full-Screen Responsive Matrix Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {attendanceRecords.map((item) => {
+          const slotsFilled =
+            (item.slots['morning-in'] ? 1 : 0) +
+            (item.slots['morning-out'] ? 1 : 0) +
+            (item.slots['afternoon-in'] ? 1 : 0) +
+            (item.slots['afternoon-out'] ? 1 : 0);
+
+          return (
+            <Card
+              key={item.day}
+              className={`border transition-all flex flex-col justify-between ${
+                item.cleared
+                  ? 'border-emerald-500/40 bg-emerald-500/[0.02] shadow-xs'
+                  : 'border-border shadow-xs'
+              }`}
+            >
+              <CardHeader className="p-3.5 pb-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-foreground">{item.day}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground">{item.date}</span>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {slotsFilled}/4 Slots
+                  </span>
+                  {item.cleared ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="size-3" />
+                      Day Cleared
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      Incomplete
+                    </span>
+                  )}
+                </div>
+              </CardHeader>
+
+              <Separator />
+
+              <CardContent className="p-3.5 space-y-2.5 flex-1">
+                {/* Morning In */}
+                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Morning In</span>
+                    {item.slots['morning-in'] ? (
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="size-3" />
+                        {item.slots['morning-in']}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Morning Out */}
+                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Morning Out</span>
+                    {item.slots['morning-out'] ? (
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="size-3" />
+                        {item.slots['morning-out']}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Afternoon In */}
+                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Afternoon In</span>
+                    {item.slots['afternoon-in'] ? (
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="size-3" />
+                        {item.slots['afternoon-in']}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Afternoon Out */}
+                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Afternoon Out</span>
+                    {item.slots['afternoon-out'] ? (
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="size-3" />
+                        {item.slots['afternoon-out']}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+
+              <CardFooter className="p-3 pt-0 text-[10px] text-muted-foreground border-t border-border/40 mt-auto">
+                <span className="truncate">Gate: Main Grandstand</span>
+              </CardFooter>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Official SBO & Dean Signature Verification Strip */}
+      <Card className="border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="size-4 text-emerald-600" />
+              <h3 className="text-sm font-semibold text-foreground">
+                Official Department Verification
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Every slot is cryptographically signed with the SBO scanner's ECDSA private key. Digital signatures are permanently locked to your college profile.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground shrink-0">
+            <div className="p-3 rounded-lg border border-dashed border-border text-center min-w-[140px]">
+              <span className="text-[10px] block uppercase text-muted-foreground">SBO Officer In-Charge</span>
+              <span className="font-bold text-foreground font-sans">Engr. R. Santos</span>
+              <span className="text-[9px] block text-emerald-600 font-sans">Digitally Signed</span>
+            </div>
+
+            <div className="p-3 rounded-lg border border-dashed border-border text-center min-w-[140px]">
+              <span className="text-[10px] block uppercase text-muted-foreground">CIT Dean Approval</span>
+              <span className="font-bold text-foreground font-sans">Dr. M. De La Cruz</span>
+              <span className="text-[9px] block text-muted-foreground font-sans">Pending Final Sign</span>
+            </div>
+          </div>
+        </div>
       </Card>
-    </main>
+    </div>
   );
 };

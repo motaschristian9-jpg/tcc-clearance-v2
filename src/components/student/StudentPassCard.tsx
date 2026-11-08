@@ -30,7 +30,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
   onBackToDashboard,
 }) => {
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-md mx-auto py-4">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-center pb-4">
           <div className="flex items-center justify-between pb-1">
@@ -164,6 +164,6 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
           </Button>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };

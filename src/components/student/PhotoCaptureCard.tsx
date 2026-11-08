@@ -117,7 +117,7 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
   };
 
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-md mx-auto py-4">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-center pb-4">
           <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
@@ -214,6 +214,6 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
           </Button>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };

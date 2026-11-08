@@ -21,7 +21,7 @@ export const ConsentCard: React.FC<ConsentCardProps> = ({ onAgree, onCancel }) =
   const [agreed, setAgreed] = useState<boolean>(false);
 
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-lg mx-auto py-4">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-left pb-3">
           <div className="flex items-center justify-between pb-1">
@@ -114,6 +114,6 @@ export const ConsentCard: React.FC<ConsentCardProps> = ({ onAgree, onCancel }) =
           </Button>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };

@@ -19,6 +19,8 @@ import {
   rebindStudentDevice,
   User,
 } from '@/lib/supabase';
+import { ShieldCheck, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const App: React.FC = () => {
   // Current active screen in student flow
@@ -106,11 +108,9 @@ export const App: React.FC = () => {
   }, []);
 
   const handleUserAuthenticated = async (user: User) => {
-    // Check if the student has already registered in Supabase
     const profile = await fetchStudentProfile(user.id);
 
     if (profile) {
-      // Existing registered student
       setStudentDbId(profile.id);
       setFullName(profile.full_name || '');
       setSchoolId(profile.school_id_no || '');
@@ -118,16 +118,13 @@ export const App: React.FC = () => {
       setSection(profile.section_id || '');
       setPhotoDataUrl(profile.photo_path || null);
 
-      // Verify One Account, One Device policy (AC5)
       const { isAuthorized } = await checkDeviceAuthorization(profile.id);
       if (!isAuthorized) {
-        // Different / new device detected -> require OTP authorization
         setCurrentScreen('otp');
       } else {
         setCurrentScreen('dashboard');
       }
     } else {
-      // First-time Google user -> proceed to Onboarding Step 1 (Consent)
       const googleFullName =
         (user.user_metadata?.full_name as string) ||
         (user.user_metadata?.name as string) ||
@@ -165,13 +162,11 @@ export const App: React.FC = () => {
 
   const handleCompleteRegistration = async () => {
     if (authUser) {
-      // Optional photo upload to Supabase storage bucket
       let finalPhotoPath = photoDataUrl;
       if (photoDataUrl && photoDataUrl.startsWith('data:')) {
         finalPhotoPath = await uploadStudentPhoto(authUser.id, photoDataUrl);
       }
 
-      // Persist student profile in Supabase students table
       const saved = await saveStudentProfileToSupabase({
         profile_id: authUser.id,
         school_id_no: schoolId,
@@ -189,74 +184,119 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between p-6 sm:p-10 selection:bg-primary selection:text-primary-foreground font-sans">
-      {/* Clean Top Header */}
-      <header className="max-w-sm mx-auto w-full flex items-center justify-between pb-3">
-        <div className="flex items-center gap-2">
-          <div className="size-7 rounded-md border border-foreground/20 flex items-center justify-center text-[11px] font-bold tracking-wider text-foreground">
-            TCC
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary selection:text-primary-foreground">
+      {/* Full-Width Global Header */}
+      <header className="w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-lg border border-foreground/20 flex items-center justify-center text-xs font-bold tracking-wider text-foreground bg-muted/30">
+              TCC
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold tracking-tight text-foreground">
+                  Event Clearance System
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                  <ShieldCheck className="size-3 text-emerald-600" />
+                  Official
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground hidden sm:block">
+                Tagoloan Community College · Student Portal
+              </p>
+            </div>
           </div>
-          <span className="text-xs font-semibold tracking-tight text-foreground">
-            Clearance System
-          </span>
+
+          {/* Student Status & Quick Actions */}
+          {authUser && currentScreen !== 'signin' && (
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-xs font-medium text-foreground truncate max-w-[180px]">
+                  {fullName || 'Student'}
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  {department} · {section || '3A'}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="h-8 text-xs gap-1.5 cursor-pointer"
+              >
+                <LogOut className="size-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            </div>
+          )}
         </div>
-        <span className="text-[11px] text-muted-foreground font-normal">
-          Tagoloan Community College
-        </span>
       </header>
 
-      {/* Main Content Viewport */}
-      <div className="flex-1 flex flex-col justify-center">
+      {/* Main Full-Width Responsive Workspace */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col justify-start">
         {/* Sign In Screen */}
-        {currentScreen === 'signin' && <SignInCard />}
+        {currentScreen === 'signin' && (
+          <div className="flex-1 flex items-center justify-center py-6">
+            <SignInCard />
+          </div>
+        )}
 
         {/* Device Transfer OTP Screen */}
         {currentScreen === 'otp' && (
-          <OtpVerificationCard
-            userEmail={authUser?.email || 'your Google account'}
-            onVerified={handleOtpVerified}
-            onCancel={handleSignOut}
-          />
+          <div className="flex-1 flex items-center justify-center py-6">
+            <OtpVerificationCard
+              userEmail={authUser?.email || 'your Google account'}
+              onVerified={handleOtpVerified}
+              onCancel={handleSignOut}
+            />
+          </div>
         )}
 
         {/* Onboarding Step 1: Privacy Consent */}
         {currentScreen === 'consent' && (
-          <ConsentCard
-            onAgree={() => setCurrentScreen('details')}
-            onCancel={handleSignOut}
-          />
+          <div className="flex-1 flex items-center justify-center py-6">
+            <ConsentCard
+              onAgree={() => setCurrentScreen('details')}
+              onCancel={handleSignOut}
+            />
+          </div>
         )}
 
         {/* Onboarding Step 2: Student Details Form */}
         {currentScreen === 'details' && (
-          <StudentDetailsCard
-            fullName={fullName}
-            setFullName={setFullName}
-            schoolId={schoolId}
-            setSchoolId={setSchoolId}
-            department={department}
-            setDepartment={setDepartment}
-            yearLevel={yearLevel}
-            setYearLevel={setYearLevel}
-            section={section}
-            setSection={setSection}
-            onNext={() => setCurrentScreen('photo')}
-            onBack={() => setCurrentScreen('consent')}
-          />
+          <div className="flex-1 flex items-center justify-center py-6">
+            <StudentDetailsCard
+              fullName={fullName}
+              setFullName={setFullName}
+              schoolId={schoolId}
+              setSchoolId={setSchoolId}
+              department={department}
+              setDepartment={setDepartment}
+              yearLevel={yearLevel}
+              setYearLevel={setYearLevel}
+              section={section}
+              setSection={setSection}
+              onNext={() => setCurrentScreen('photo')}
+              onBack={() => setCurrentScreen('consent')}
+            />
+          </div>
         )}
 
         {/* Onboarding Step 3: Face Photo Capture */}
         {currentScreen === 'photo' && (
-          <PhotoCaptureCard
-            photoDataUrl={photoDataUrl}
-            onPhotoCaptured={setPhotoDataUrl}
-            onRetake={() => setPhotoDataUrl(null)}
-            onNext={handleCompleteRegistration}
-            onBack={() => setCurrentScreen('details')}
-          />
+          <div className="flex-1 flex items-center justify-center py-6">
+            <PhotoCaptureCard
+              photoDataUrl={photoDataUrl}
+              onPhotoCaptured={setPhotoDataUrl}
+              onRetake={() => setPhotoDataUrl(null)}
+              onNext={handleCompleteRegistration}
+              onBack={() => setCurrentScreen('details')}
+            />
+          </div>
         )}
 
-        {/* Student Dashboard: Activities, Clearance Cards & QR Generator */}
+        {/* Student Dashboard: Takes Advantage of the Whole Screen! */}
         {currentScreen === 'dashboard' && (
           <StudentDashboard
             fullName={fullName || 'Alexander M. Cruz'}
@@ -273,18 +313,20 @@ export const App: React.FC = () => {
 
         {/* Dynamic Rotating QR Pass Modal/Screen */}
         {currentScreen === 'pass' && (
-          <StudentPassCard
-            fullName={fullName || 'Alexander M. Cruz'}
-            schoolId={schoolId || '20241373'}
-            department={department || 'CIT'}
-            section={section || '3A'}
-            passCountdown={passCountdown}
-            onViewActivityCard={() => setCurrentScreen('activity-card')}
-            onBackToDashboard={() => setCurrentScreen('dashboard')}
-          />
+          <div className="flex-1 flex items-center justify-center py-4">
+            <StudentPassCard
+              fullName={fullName || 'Alexander M. Cruz'}
+              schoolId={schoolId || '20241373'}
+              department={department || 'CIT'}
+              section={section || '3A'}
+              passCountdown={passCountdown}
+              onViewActivityCard={() => setCurrentScreen('activity-card')}
+              onBackToDashboard={() => setCurrentScreen('dashboard')}
+            />
+          </div>
         )}
 
-        {/* 5-Day Event Clearance Matrix Card */}
+        {/* 5-Day Event Clearance Matrix Card (Full Screen Responsive Matrix) */}
         {currentScreen === 'activity-card' && (
           <ClearanceMatrixCard
             fullName={fullName || 'Alexander M. Cruz'}
@@ -294,13 +336,14 @@ export const App: React.FC = () => {
             onBack={() => setCurrentScreen('dashboard')}
           />
         )}
-      </div>
+      </main>
 
-      {/* Minimal Footer */}
-      <footer className="max-w-sm mx-auto w-full text-center pt-4">
-        <p className="text-[11px] text-muted-foreground font-normal">
-          Tagoloan Community College · CIT Event Attendance & Clearance
-        </p>
+      {/* Global Full-Width Footer */}
+      <footer className="w-full border-t border-border bg-card/30 mt-auto">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>Tagoloan Community College · Baluarte, Tagoloan, Misamis Oriental</span>
+          <span>CIT Event Attendance & Clearance Management Platform</span>
+        </div>
       </footer>
     </div>
   );
