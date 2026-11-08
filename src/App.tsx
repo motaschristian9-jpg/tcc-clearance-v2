@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StudentScreen } from '@/types/student';
 import { SignInCard } from '@/components/student/SignInCard';
+import { OtpVerificationCard } from '@/components/student/OtpVerificationCard';
 import { ConsentCard } from '@/components/student/ConsentCard';
 import { StudentDetailsCard } from '@/components/student/StudentDetailsCard';
 import { PhotoCaptureCard } from '@/components/student/PhotoCaptureCard';
@@ -10,6 +11,9 @@ import {
   signOutUser,
   fetchStudentProfile,
   saveStudentProfileToSupabase,
+  uploadStudentPhoto,
+  checkDeviceAuthorization,
+  rebindStudentDevice,
   User,
 } from '@/lib/supabase';
 
@@ -19,6 +23,7 @@ export const App: React.FC = () => {
   const [authUser, setAuthUser] = useState<User | null>(null);
 
   // Student Profile State
+  const [studentDbId, setStudentDbId] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string>('');
   const [schoolId, setSchoolId] = useState<string>('');
   const [department, setDepartment] = useState<string>('CIT');
@@ -64,12 +69,21 @@ export const App: React.FC = () => {
 
     if (profile) {
       // Existing registered student
+      setStudentDbId(profile.id);
       setFullName(profile.full_name || '');
       setSchoolId(profile.school_id_no || '');
       setDepartment(profile.department_id || 'CIT');
       setSection(profile.section_id || '');
       setPhotoDataUrl(profile.photo_path || null);
-      setCurrentScreen('registered');
+
+      // Verify One Account, One Device policy (AC5)
+      const { isAuthorized } = await checkDeviceAuthorization(profile.id);
+      if (!isAuthorized) {
+        // Different / new device detected -> require OTP authorization
+        setCurrentScreen('otp');
+      } else {
+        setCurrentScreen('registered');
+      }
     } else {
       // First-time Google user -> proceed to Onboarding Step 1 (Consent)
       const googleFullName =
@@ -83,6 +97,13 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOtpVerified = async () => {
+    if (studentDbId) {
+      await rebindStudentDevice(studentDbId);
+    }
+    setCurrentScreen('registered');
+  };
+
   const handleSignOut = async () => {
     await signOutUser();
     setAuthUser(null);
@@ -91,6 +112,7 @@ export const App: React.FC = () => {
   };
 
   const resetFormState = () => {
+    setStudentDbId(null);
     setFullName('');
     setSchoolId('');
     setDepartment('CIT');
@@ -101,15 +123,25 @@ export const App: React.FC = () => {
 
   const handleCompleteRegistration = async () => {
     if (authUser) {
+      // Optional photo upload to Supabase storage bucket
+      let finalPhotoPath = photoDataUrl;
+      if (photoDataUrl && photoDataUrl.startsWith('data:')) {
+        finalPhotoPath = await uploadStudentPhoto(authUser.id, photoDataUrl);
+      }
+
       // Persist student profile in Supabase students table
-      await saveStudentProfileToSupabase({
+      const saved = await saveStudentProfileToSupabase({
         profile_id: authUser.id,
         school_id_no: schoolId,
         full_name: fullName,
         department_id: department,
         section_id: section,
-        photo_path: photoDataUrl || '',
+        photo_path: finalPhotoPath || '',
       });
+
+      if (saved?.id) {
+        setStudentDbId(saved.id);
+      }
     }
     setCurrentScreen('registered');
   };
@@ -134,6 +166,14 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col justify-center">
         {currentScreen === 'signin' && <SignInCard />}
+
+        {currentScreen === 'otp' && (
+          <OtpVerificationCard
+            userEmail={authUser?.email || 'your Google account'}
+            onVerified={handleOtpVerified}
+            onCancel={handleSignOut}
+          />
+        )}
 
         {currentScreen === 'consent' && (
           <ConsentCard

@@ -45,7 +45,10 @@ export const SignInCard: React.FC<SignInCardProps> = () => {
       // Supabase will redirect to Google OAuth consent screen
     } catch (err: unknown) {
       console.error('Google Sign-in failed:', err);
-      const message = err instanceof Error ? err.message : 'Failed to connect to Google via Supabase.';
+      let message = err instanceof Error ? err.message : 'Failed to connect to Google via Supabase.';
+      if (message.toLowerCase().includes('provider') || message.toLowerCase().includes('unsupported')) {
+        message = 'Google provider is not enabled in your Supabase project. Enable it at: Supabase Dashboard → Authentication → Providers → Google.';
+      }
       setErrorMsg(message);
       setIsLoading(false);
     }
