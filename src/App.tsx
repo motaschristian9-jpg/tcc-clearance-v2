@@ -7,14 +7,9 @@ import { Badge } from '@/components/common/Badge';
 import { 
   Camera, 
   QrCode, 
-  CheckCircle, 
-  X, 
-  FileText, 
-  Download, 
-  Search, 
-  Clock, 
-  UserCheck,
-  CheckCircle2
+  Check, 
+  ArrowRight,
+  FileDown
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -25,436 +20,381 @@ export const App: React.FC = () => {
   const [currentSlot, setCurrentSlot] = useState<string>('Day 1 · Morning In');
 
   // Scanner Simulator State
-  const [scannerSimulationState, setScannerSimulationState] = useState<ScanStatus>('accepted');
+  const [scanState, setScanState] = useState<ScanStatus>('accepted');
   const countdown = 24;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      {/* Top Header */}
+    <div className="min-h-screen flex flex-col bg-white text-neutral-900 selection:bg-neutral-950 selection:text-white">
+      {/* Super Minimalist Header */}
       <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
-      {/* Persistent Status & Venue Strip (SBO Officer Mode) */}
+      {/* Subtle Station & Connectivity Strip (Officer Mode) */}
       {currentRole === 'officer' && (
         <StatusStrip
           isOnline={isOnline}
-          isReadyForOffline={true}
           pendingSyncCount={pendingSyncCount}
           currentVenue={currentVenue}
           currentSlot={currentSlot}
           onChangeVenueOrSlot={() => {
-            const newSlot = currentSlot.includes('Morning In') ? 'Day 1 · Morning Out' : 'Day 1 · Morning In';
-            setCurrentSlot(newSlot);
+            setCurrentSlot((prev) => 
+              prev.includes('Morning In') ? 'Day 1 · Morning Out' : 'Day 1 · Morning In'
+            );
           }}
-          onSyncClick={() => {
-            setPendingSyncCount(0);
-          }}
+          onSyncClick={() => setPendingSyncCount(0)}
         />
       )}
 
-      {/* Main Content Area: Action-First Layout */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
-
-        {/* ROLE 1: SBO FIELD OFFICER SCANNER EXPERIENCE */}
+      {/* Main Workspace with Generous White Spaces */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-6 sm:px-12 py-12 sm:py-20 flex flex-col justify-start">
+        
+        {/* ========================================================= */}
+        {/* VIEW 1: FIELD SCANNER (SUPER MINIMALIST & ACTION-FIRST)   */}
+        {/* ========================================================= */}
         {currentRole === 'officer' && (
-          <div className="flex flex-col gap-6">
-            {/* Context & Quick Mode Controls */}
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+          <div className="flex flex-col gap-16">
+            
+            {/* Minimal Title & Sim Switcher */}
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-6 pb-6 border-b border-neutral-100">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                  Event Scanner
+                <span className="text-[11px] font-medium tracking-widest uppercase text-neutral-400">
+                  Tagoloan Community College
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-light text-neutral-950 tracking-tight mt-1">
+                  Scanner
                 </h2>
-                <p className="text-sm text-slate-600 font-medium">
-                  Optimized for outdoor sunlight & rapid one-handed line check-in
-                </p>
               </div>
 
-              {/* State Tester for Developer/User Review */}
-              <div className="hidden sm:flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold">
-                <span className="px-2 text-slate-500">Preview State:</span>
+              {/* Minimal state toggle for review */}
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-neutral-400">State:</span>
                 <button
-                  onClick={() => setScannerSimulationState('accepted')}
-                  className={`px-2 py-1 rounded transition-colors ${
-                    scannerSimulationState === 'accepted'
-                      ? 'bg-emerald-700 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                  onClick={() => setScanState('accepted')}
+                  className={`transition-colors ${scanState === 'accepted' ? 'font-semibold text-neutral-950 underline underline-offset-4' : 'text-neutral-400 hover:text-neutral-700'}`}
                 >
-                  🟢 Accepted
+                  Accepted
                 </button>
                 <button
-                  onClick={() => setScannerSimulationState('flagged')}
-                  className={`px-2 py-1 rounded transition-colors ${
-                    scannerSimulationState === 'flagged'
-                      ? 'bg-amber-600 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                  onClick={() => setScanState('flagged')}
+                  className={`transition-colors ${scanState === 'flagged' ? 'font-semibold text-amber-700 underline underline-offset-4' : 'text-neutral-400 hover:text-neutral-700'}`}
                 >
-                  🟡 Flagged
+                  Flagged
                 </button>
                 <button
-                  onClick={() => setScannerSimulationState('invalid')}
-                  className={`px-2 py-1 rounded transition-colors ${
-                    scannerSimulationState === 'invalid'
-                      ? 'bg-red-700 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                  onClick={() => setScanState('invalid')}
+                  className={`transition-colors ${scanState === 'invalid' ? 'font-semibold text-red-700 underline underline-offset-4' : 'text-neutral-400 hover:text-neutral-700'}`}
                 >
-                  🔴 Invalid
+                  Invalid
                 </button>
               </div>
             </div>
 
-            {/* Layout: Top Camera / QR Viewport + Result Card */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-              {/* Camera Aim Viewport (Half screen or Left col) */}
-              <div className="md:col-span-5 bg-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[280px] sm:min-h-[340px] relative overflow-hidden border border-slate-800 shadow-md">
-                <div className="absolute inset-4 border-2 border-dashed border-white/40 rounded-xl pointer-events-none flex items-center justify-center">
-                  <div className="w-12 h-12 border-t-2 border-l-2 border-white absolute top-0 left-0"></div>
-                  <div className="w-12 h-12 border-t-2 border-r-2 border-white absolute top-0 right-0"></div>
-                  <div className="w-12 h-12 border-b-2 border-l-2 border-white absolute bottom-0 left-0"></div>
-                  <div className="w-12 h-12 border-b-2 border-r-2 border-white absolute bottom-0 right-0"></div>
-                </div>
+            {/* Action-First Core: Viewfinder + Student Detail Card */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 sm:gap-16 items-start">
+              
+              {/* Camera Aim Viewport (Ultra-clean, thin brackets, white negative space) */}
+              <div className="md:col-span-5 flex flex-col items-center">
+                <div className="w-full aspect-square max-w-[280px] sm:max-w-none border border-neutral-200 rounded-lg relative flex flex-col items-center justify-center p-8 bg-neutral-50/50">
+                  {/* Subtle Corner Brackets */}
+                  <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-neutral-900 pointer-events-none" />
+                  <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-neutral-900 pointer-events-none" />
+                  <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-neutral-900 pointer-events-none" />
+                  <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-neutral-900 pointer-events-none" />
 
-                <div className="flex flex-col items-center text-center z-10 p-4">
-                  <Camera className="w-12 h-12 text-white/70 mb-2" />
-                  <p className="text-white text-sm font-semibold tracking-wide">
-                    Aim camera at Student QR
-                  </p>
-                  <p className="text-white/60 text-xs mt-1">
-                    Continuous offline cryptographic scan
+                  <Camera className="w-8 h-8 text-neutral-400 mb-3" />
+                  <p className="text-xs text-neutral-500 font-normal tracking-wide text-center">
+                    Point camera at Student Pass
                   </p>
                 </div>
 
-                {/* Bottom Viewport Overlay */}
-                <div className="absolute bottom-3 left-3 right-3 bg-black/75 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center justify-between text-xs text-white">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    Scanner Active
+                <div className="w-full mt-4 flex items-center justify-between text-[11px] text-neutral-400">
+                  <span>ECDSA Offline Engine</span>
+                  <span className="flex items-center gap-1.5 text-neutral-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                    Live Viewfinder
                   </span>
-                  <span className="font-mono text-slate-300">ECDSA P-256</span>
                 </div>
               </div>
 
-              {/* Student Result Card (Takes at least 40% screen width, large type) */}
-              <div className="md:col-span-7 bg-white border border-slate-300 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  {/* Status Dual-Encoding Badge */}
-                  <div className="mb-4">
-                    <Badge variant={scannerSimulationState} />
+              {/* Student Result (Generous White Spaces, Clean Hierarchy) */}
+              <div className="md:col-span-7 flex flex-col justify-between min-h-[300px]">
+                <div className="space-y-6">
+                  {/* Status Indicator */}
+                  <div>
+                    <Badge variant={scanState} />
                   </div>
 
-                  {/* Student Details Grid (Sunlight-optimized high contrast) */}
-                  <div className="flex gap-4 sm:gap-6 items-start">
-                    {/* Student Photo (At least 40% width on mobile) */}
-                    <div className="w-28 h-36 sm:w-36 sm:h-44 bg-slate-100 rounded-xl border-2 border-slate-300 overflow-hidden shrink-0 flex items-center justify-center relative">
-                      <div className="flex flex-col items-center justify-center text-slate-400 p-2 text-center">
-                        <UserCheck className="w-12 h-12 text-slate-500 mb-1" />
-                        <span className="text-[10px] font-mono font-bold text-slate-600 uppercase">
-                          Live Verified
-                        </span>
-                      </div>
-                      <div className="absolute bottom-1 right-1 bg-brand-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                        CIT
-                      </div>
+                  {/* Student Details */}
+                  <div className="space-y-4">
+                    <div className="text-xs tracking-wider text-neutral-400 font-mono">
+                      ID 2023-01842 · CIT
                     </div>
 
-                    {/* Information Hierarchy */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-mono font-semibold text-slate-500 tracking-wider">
-                        ID: 2023-01842
-                      </div>
-                      {/* Name in Large Type (>=24px) */}
-                      <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight mt-0.5 truncate">
-                        ALEXANDER M. CRUZ
-                      </h3>
+                    <h3 className="text-3xl sm:text-4xl font-light text-neutral-950 tracking-tight leading-none">
+                      Alexander M. Cruz
+                    </h3>
 
-                      <div className="mt-2 space-y-1 text-sm font-medium text-slate-700">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500">Program:</span>
-                          <span className="font-bold text-slate-900">BS Information Technology</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500">Section:</span>
-                          <span className="font-semibold text-slate-800">BSIT 3-A</span>
-                        </div>
-                      </div>
-
-                      {/* Flag Details (when state is flagged) */}
-                      {scannerSimulationState === 'flagged' && (
-                        <div className="mt-3 p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 font-medium">
-                          ⚠️ <span className="font-bold">Location Drift:</span> Student scanned outside designated gym perimeter (approx. 45m away).
-                        </div>
-                      )}
-
-                      {/* Invalid Details (when state is invalid) */}
-                      {scannerSimulationState === 'invalid' && (
-                        <div className="mt-3 p-2.5 bg-red-50 border border-red-300 rounded-lg text-xs text-red-900 font-medium">
-                          ❌ <span className="font-bold">Signature Mismatch:</span> QR timestamp expired (&gt;30s) or device key unregistered.
-                        </div>
-                      )}
+                    <div className="pt-2 text-sm text-neutral-500 font-normal space-y-1">
+                      <p>Bachelor of Science in Information Technology</p>
+                      <p className="text-neutral-400">Section 3-A · Tagoloan Community College</p>
                     </div>
+
+                    {/* Diagnostic notes if flagged or invalid */}
+                    {scanState === 'flagged' && (
+                      <div className="py-3 px-4 border border-amber-200 bg-amber-50/50 rounded text-xs text-amber-900 leading-relaxed">
+                        Location notice: Student registered 40m outside main perimeter. Manual officer approval required.
+                      </div>
+                    )}
+
+                    {scanState === 'invalid' && (
+                      <div className="py-3 px-4 border border-red-200 bg-red-50/50 rounded text-xs text-red-900 leading-relaxed">
+                        Signature verification failed. The QR code has expired or was not signed by this student’s bound device.
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Primary Action Buttons (Thumb-reachable, >=48px touch target) */}
-                <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-3">
-                  {scannerSimulationState === 'accepted' ? (
+                {/* Primary Action Button (Generous white space separation, min 48px touch target) */}
+                <div className="pt-10 flex flex-col sm:flex-row gap-4">
+                  {scanState === 'accepted' ? (
                     <>
                       <Button
-                        variant="accept"
-                        size="scanner"
+                        variant="primary"
+                        size="lg"
                         className="flex-1"
-                        leftIcon={<CheckCircle2 className="w-6 h-6" />}
-                        onClick={() => {
-                          setPendingSyncCount((prev) => prev + 1);
-                        }}
+                        rightIcon={<ArrowRight className="w-4 h-4" />}
+                        onClick={() => setPendingSyncCount((prev) => prev + 1)}
                       >
-                        Accept & Commit Check-In
+                        Accept & Check-in
                       </Button>
                       <Button
-                        variant="secondary"
+                        variant="danger"
                         size="lg"
-                        className="text-red-700 border-red-200 hover:bg-red-50"
-                        onClick={() => setScannerSimulationState('invalid')}
+                        onClick={() => setScanState('invalid')}
                       >
                         Reject
                       </Button>
                     </>
-                  ) : scannerSimulationState === 'flagged' ? (
+                  ) : scanState === 'flagged' ? (
                     <>
                       <Button
-                        variant="amber"
-                        size="scanner"
+                        variant="primary"
+                        size="lg"
                         className="flex-1"
-                        leftIcon={<CheckCircle className="w-5 h-5" />}
-                        onClick={() => setScannerSimulationState('accepted')}
+                        onClick={() => setScanState('accepted')}
                       >
-                        Override & Accept
+                        Approve Exception
                       </Button>
                       <Button
-                        variant="reject"
+                        variant="danger"
                         size="lg"
-                        leftIcon={<X className="w-5 h-5" />}
-                        onClick={() => setScannerSimulationState('invalid')}
+                        onClick={() => setScanState('invalid')}
                       >
-                        Reject Flag
+                        Reject Scan
                       </Button>
                     </>
                   ) : (
                     <Button
-                      variant="primary"
-                      size="scanner"
-                      leftIcon={<QrCode className="w-5 h-5" />}
-                      onClick={() => setScannerSimulationState('accepted')}
+                      variant="secondary"
+                      size="lg"
+                      className="w-full"
+                      onClick={() => setScanState('accepted')}
                     >
                       Scan Next Student
                     </Button>
                   )}
                 </div>
+
               </div>
             </div>
 
-            {/* Quick Action Footer Bar */}
-            <div className="grid grid-cols-3 gap-3">
-              <Button
-                variant="secondary"
-                size="md"
-                leftIcon={<Search className="w-4 h-4 text-slate-600" />}
-                className="w-full text-xs sm:text-sm font-semibold truncate"
-                onClick={() => alert('Manual Check-in Modal: Search student by ID or Name')}
+            {/* Quiet Footer Links */}
+            <div className="pt-12 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-6 text-xs text-neutral-400">
+              <button 
+                onClick={() => alert('Search student roster manually')}
+                className="hover:text-neutral-900 transition-colors"
               >
-                Manual Entry
-              </Button>
-              <Button
-                variant="secondary"
-                size="md"
-                leftIcon={<FileText className="w-4 h-4 text-slate-600" />}
-                className="w-full text-xs sm:text-sm font-semibold truncate"
-                onClick={() => alert('Check Card: Validate full student clearance matrix')}
+                Manual Search & Entry
+              </button>
+              <button 
+                onClick={() => alert('Check student digital activity card matrix')}
+                className="hover:text-neutral-900 transition-colors"
               >
-                Check Card
-              </Button>
-              <Button
-                variant="secondary"
-                size="md"
-                leftIcon={<Download className="w-4 h-4 text-slate-600" />}
-                className="w-full text-xs sm:text-sm font-semibold truncate"
+                Inspect Activity Card
+              </button>
+              <button 
                 onClick={() => setIsOnline(!isOnline)}
+                className="hover:text-neutral-900 transition-colors"
               >
-                Toggle {isOnline ? 'Offline' : 'Online'}
-              </Button>
+                Switch to {isOnline ? 'Offline' : 'Online'} Mode
+              </button>
             </div>
+
           </div>
         )}
 
-        {/* ROLE 2: STUDENT PORTAL EXPERIENCE */}
+        {/* ========================================================= */}
+        {/* VIEW 2: STUDENT PASS (PURE WHITE SPACES & ROTATING PASS)  */}
+        {/* ========================================================= */}
         {currentRole === 'student' && (
-          <div className="flex flex-col gap-6 max-w-md mx-auto w-full">
-            <div className="text-center">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                My Attendance Pass
+          <div className="max-w-md mx-auto w-full py-8 flex flex-col items-center text-center gap-12">
+            
+            {/* Header */}
+            <div>
+              <span className="text-[11px] font-medium tracking-widest uppercase text-neutral-400">
+                CIT Intramurals 2026
+              </span>
+              <h2 className="text-3xl font-light text-neutral-950 tracking-tight mt-1">
+                Alexander M. Cruz
               </h2>
-              <p className="text-sm text-slate-600 font-medium">
-                CIT Intramurals 2026 · Tagoloan Community College
+              <p className="text-xs text-neutral-500 font-mono mt-1">
+                BSIT 3-A · ID 2023-01842
               </p>
             </div>
 
-            {/* Student Pass Card with Rotating 30s QR Code */}
-            <div className="bg-white border-2 border-slate-300 rounded-3xl p-6 shadow-sm flex flex-col items-center">
-              {/* Rotating dynamic QR box */}
-              <div className="w-64 h-64 bg-slate-900 rounded-2xl flex flex-col items-center justify-center text-white relative shadow-inner p-4">
-                <QrCode className="w-48 h-48 text-white" />
-                <div className="absolute top-2 right-2 bg-emerald-500 text-slate-950 font-mono text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  LIVE
-                </div>
+            {/* QR Code Container with High Breathing Room */}
+            <div className="flex flex-col items-center">
+              <div className="p-8 border border-neutral-200 rounded-2xl bg-white shadow-sm flex flex-col items-center">
+                <QrCode className="w-56 h-56 text-neutral-950" />
               </div>
 
-              {/* 30s Security Countdown Bar */}
-              <div className="w-full mt-4 flex items-center justify-between text-xs font-semibold text-slate-600">
-                <span className="flex items-center gap-1 text-slate-800">
-                  <Clock className="w-3.5 h-3.5 text-brand-700" />
-                  Rotates every 30s
-                </span>
-                <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-brand-800 font-bold">
-                  {countdown}s remaining
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1.5">
-                <div
-                  className="bg-brand-700 h-full transition-all duration-1000 ease-linear"
-                  style={{ width: `${(countdown / 30) * 100}%` }}
-                ></div>
-              </div>
-
-              {/* Student Identification */}
-              <div className="w-full mt-5 pt-4 border-t border-slate-200 text-center">
-                <div className="text-xs uppercase tracking-wider font-bold text-slate-500">
-                  BSIT 3-A · ID 2023-01842
+              {/* Quiet, Minimalist 30s Countdown Indicator */}
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  <span>Pass refreshes in {countdown}s</span>
                 </div>
-                <div className="text-xl font-extrabold text-slate-900 mt-0.5">
-                  ALEXANDER M. CRUZ
-                </div>
-                <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-semibold">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  Device Cryptographically Bound
+                <div className="w-48 bg-neutral-100 h-0.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-neutral-900 h-full transition-all duration-1000 ease-linear"
+                    style={{ width: `${(countdown / 30) * 100}%` }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Quick Action: Open Digital Activity Card */}
-            <Button
-              variant="secondary"
-              size="lg"
-              leftIcon={<FileText className="w-5 h-5 text-slate-700" />}
-              className="w-full"
-              onClick={() => alert('View Activity Card: Displaying 5-Day CIT Intramurals clearance matrix')}
-            >
-              View My Digital Activity Card
-            </Button>
-          </div>
-        )}
+            {/* Cryptographic Device Status */}
+            <div className="flex items-center gap-2 text-xs text-neutral-500">
+              <Check className="w-3.5 h-3.5 text-neutral-900" />
+              <span>ECDSA key bound to this device</span>
+            </div>
 
-        {/* ROLE 3: HEAD OFFICER / ADMIN DASHBOARD PREVIEW */}
-        {currentRole === 'head_officer' && (
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Department Attendance & Clearance Matrix
-                </h2>
-                <p className="text-sm text-slate-600 font-medium">
-                  CIT Intramurals 2026 · College of Information Technology
-                </p>
-              </div>
-
+            {/* Minimal Action */}
+            <div className="w-full pt-4">
               <Button
                 variant="secondary"
-                size="sm"
-                leftIcon={<Download className="w-4 h-4" />}
-                onClick={() => alert('Exporting Department Workbook to ExcelJS format...')}
+                size="lg"
+                className="w-full"
+                onClick={() => alert('Opening Digital Activity Card with 5-Day attendance slots...')}
               >
-                Export Excel (XLSX)
+                View Activity Card
               </Button>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Enrolled</div>
-                <div className="text-2xl font-extrabold text-slate-900 mt-1">482</div>
-                <div className="text-xs text-slate-500 mt-0.5">CIT Students</div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* VIEW 3: HEAD / ADMIN CLEARANCE RECORDS (AIRY TABLE)       */}
+        {/* ========================================================= */}
+        {currentRole === 'head_officer' && (
+          <div className="flex flex-col gap-12">
+            
+            {/* Header with High Breathing Room */}
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-6 border-b border-neutral-100">
+              <div>
+                <span className="text-[11px] font-medium tracking-widest uppercase text-neutral-400">
+                  College of Information Technology
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-light text-neutral-950 tracking-tight mt-1">
+                  Clearance Records
+                </h2>
               </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Day 1 Morning In</div>
-                <div className="text-2xl font-extrabold text-emerald-700 mt-1">461</div>
-                <div className="text-xs text-emerald-600 font-medium mt-0.5">95.6% Cleared</div>
+
+              <button
+                onClick={() => alert('Exporting attendance records to Excel...')}
+                className="inline-flex items-center gap-2 text-xs text-neutral-600 hover:text-neutral-950 transition-colors uppercase tracking-wider font-medium"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Export (XLSX)</span>
+              </button>
+            </div>
+
+            {/* Quiet Metrics (Airy Numbers, No Heavy Boxes) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-4">
+              <div>
+                <span className="text-[11px] uppercase tracking-wider text-neutral-400">Enrolled</span>
+                <p className="text-3xl font-light text-neutral-950 mt-1">482</p>
               </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Flagged Scans</div>
-                <div className="text-2xl font-extrabold text-amber-700 mt-1">12</div>
-                <div className="text-xs text-amber-700 font-medium mt-0.5">Requires Head Audit</div>
+              <div>
+                <span className="text-[11px] uppercase tracking-wider text-neutral-400">Cleared Day 1</span>
+                <p className="text-3xl font-light text-neutral-950 mt-1">461</p>
               </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Signed Digital Cards</div>
-                <div className="text-2xl font-extrabold text-brand-800 mt-1">458</div>
-                <div className="text-xs text-slate-500 mt-0.5">ECDSA Verified</div>
+              <div>
+                <span className="text-[11px] uppercase tracking-wider text-neutral-400">Flagged</span>
+                <p className="text-3xl font-light text-neutral-950 mt-1">12</p>
+              </div>
+              <div>
+                <span className="text-[11px] uppercase tracking-wider text-neutral-400">Verified Stamps</span>
+                <p className="text-3xl font-light text-neutral-950 mt-1">458</p>
               </div>
             </div>
 
-            {/* Table Mockup */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <span className="font-bold text-sm text-slate-800">CIT Section 3-A Roster (Sample)</span>
-                <span className="text-xs text-slate-500">Sorted by Surname</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="py-3 px-4">School ID</th>
-                      <th className="py-3 px-4">Student Name</th>
-                      <th className="py-3 px-4">Day 1 In</th>
-                      <th className="py-3 px-4">Day 1 Out</th>
-                      <th className="py-3 px-4">Day 2 In</th>
-                      <th className="py-3 px-4">Day 2 Out</th>
-                      <th className="py-3 px-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
-                    <tr>
-                      <td className="py-3 px-4 font-mono text-xs">2023-01842</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">Cruz, Alexander M.</td>
-                      <td className="py-3 px-4 text-emerald-700 font-semibold">07:54 AM ✓</td>
-                      <td className="py-3 px-4 text-emerald-700 font-semibold">11:45 AM ✓</td>
-                      <td className="py-3 px-4 text-emerald-700 font-semibold">08:02 AM ✓</td>
-                      <td className="py-3 px-4 text-slate-400">Pending</td>
-                      <td className="py-3 px-4">
-                        <Badge variant="accepted" label="On Track" />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-mono text-xs">2023-01905</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">Dela Cruz, Juan P.</td>
-                      <td className="py-3 px-4 text-emerald-700 font-semibold">08:12 AM ✓</td>
-                      <td className="py-3 px-4 text-amber-700 font-semibold">Flagged (Late)</td>
-                      <td className="py-3 px-4 text-emerald-700 font-semibold">07:50 AM ✓</td>
-                      <td className="py-3 px-4 text-slate-400">Pending</td>
-                      <td className="py-3 px-4">
-                        <Badge variant="flagged" label="Review Req." />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            {/* Minimalist Airy Attendance Table */}
+            <div className="pt-6 overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-neutral-200 text-neutral-400 font-normal uppercase tracking-wider">
+                    <th className="py-4 pr-6">School ID</th>
+                    <th className="py-4 pr-6">Student Name</th>
+                    <th className="py-4 pr-6">Day 1 In</th>
+                    <th className="py-4 pr-6">Day 1 Out</th>
+                    <th className="py-4 pr-6">Day 2 In</th>
+                    <th className="py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 text-neutral-700">
+                  <tr className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="py-5 pr-6 font-mono text-neutral-400">2023-01842</td>
+                    <td className="py-5 pr-6 font-medium text-neutral-950">Alexander M. Cruz</td>
+                    <td className="py-5 pr-6">07:54 AM</td>
+                    <td className="py-5 pr-6">11:45 AM</td>
+                    <td className="py-5 pr-6">08:02 AM</td>
+                    <td className="py-5">
+                      <Badge variant="accepted" label="Cleared" />
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="py-5 pr-6 font-mono text-neutral-400">2023-01905</td>
+                    <td className="py-5 pr-6 font-medium text-neutral-950">Juan P. Dela Cruz</td>
+                    <td className="py-5 pr-6">08:12 AM</td>
+                    <td className="py-5 pr-6 text-amber-700">Late Out</td>
+                    <td className="py-5 pr-6">07:50 AM</td>
+                    <td className="py-5">
+                      <Badge variant="flagged" label="Review" />
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="py-5 pr-6 font-mono text-neutral-400">2023-02011</td>
+                    <td className="py-5 pr-6 font-medium text-neutral-950">Maria Elena S. Santos</td>
+                    <td className="py-5 pr-6">07:48 AM</td>
+                    <td className="py-5 pr-6">11:50 AM</td>
+                    <td className="py-5 pr-6">07:58 AM</td>
+                    <td className="py-5">
+                      <Badge variant="accepted" label="Cleared" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+
           </div>
         )}
 
       </main>
 
-      {/* Utilitarian Footer */}
-      <footer className="border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500 font-medium">
-        Tagoloan Community College · Event Clearance & Cryptographic Attendance PWA · Minimalist SaaS
+      {/* Clean, quiet footer */}
+      <footer className="border-t border-neutral-100 py-8 px-6 sm:px-12 text-center text-[11px] text-neutral-400">
+        Tagoloan Community College · Minimalist Clearance System
       </footer>
     </div>
   );

@@ -81,3 +81,4 @@ export interface ScanRecord {
   synced: boolean;
   officerSignature?: string;
 }
+
