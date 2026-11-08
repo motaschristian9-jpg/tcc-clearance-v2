@@ -10,19 +10,34 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Camera, RefreshCw, Check, Clock, ShieldCheck } from 'lucide-react';
+import { 
+  Camera, 
+  RefreshCw, 
+  Check, 
+  Clock, 
+  ShieldCheck, 
+  QrCode, 
+  FileText, 
+  ArrowLeft,
+  Download,
+  CheckCircle2,
+  LogOut,
+  UserCheck
+} from 'lucide-react';
 
 export const App: React.FC = () => {
   // Screen sequence:
-  // 1. 'signin' (Gmail Login)
-  // 2. 'consent' (Data Privacy RA 10173)
-  // 3. 'details' (Student Info Form)
-  // 4. 'photo' (Live Face Check)
-  // 5. 'waiting' (Pending SBO Approval)
-  const [currentScreen, setCurrentScreen] = useState<'signin' | 'consent' | 'details' | 'photo' | 'waiting'>('signin');
+  // - 'signin': Neutral Google sign in entry
+  // - Onboarding (for new accounts): 'consent' -> 'details' -> 'photo' -> 'waiting'
+  // - Authenticated Dashboard (for existing accounts): 'pass' -> 'activity-card'
+  const [currentScreen, setCurrentScreen] = useState<
+    'signin' | 'consent' | 'details' | 'photo' | 'waiting' | 'pass' | 'activity-card'
+  >('signin');
 
-  // Form State
-  const [email, setEmail] = useState<string>('alexander.cruz@gmail.com');
+  // Simulation state: whether Google sign-in detects a new user vs returning approved user
+  const [isExistingAccount, setIsExistingAccount] = useState<boolean>(false);
+
+  // Student Profile State
   const [fullName, setFullName] = useState<string>('Alexander M. Cruz');
   const [schoolId, setSchoolId] = useState<string>('2023-01842');
   const [department, setDepartment] = useState<string>('CIT');
@@ -35,6 +50,18 @@ export const App: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Pass timer simulation (30-second window)
+  const [passCountdown, setPassCountdown] = useState<number>(24);
+
+  useEffect(() => {
+    if (currentScreen === 'pass') {
+      const interval = setInterval(() => {
+        setPassCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentScreen]);
+
   const departments = [
     { code: 'CIT', name: 'College of Information Technology' },
     { code: 'CBA', name: 'College of Business Administration' },
@@ -46,7 +73,7 @@ export const App: React.FC = () => {
     { code: 'CLIS', name: 'College of Library & Information Science' },
   ];
 
-  // Camera stream handler for Step 4
+  // Camera stream handler for Photo Step
   useEffect(() => {
     let active = true;
 
@@ -134,6 +161,17 @@ export const App: React.FC = () => {
     setPhotoDataUrl(dataUrl);
   };
 
+  // Google Sign-In Handler
+  const handleGoogleSignIn = () => {
+    if (isExistingAccount) {
+      // Returning registered & approved user -> goes directly to their active clearance pass
+      setCurrentScreen('pass');
+    } else {
+      // New user -> starts the one-time registration & onboarding process
+      setCurrentScreen('consent');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between p-6 sm:p-10 selection:bg-primary selection:text-primary-foreground font-sans">
       {/* Top Header */}
@@ -151,27 +189,27 @@ export const App: React.FC = () => {
         </span>
       </header>
 
-      {/* SCREEN 1: SIGN IN WITH GMAIL */}
+      {/* SCREEN 1: NEUTRAL SIGN IN SCREEN (CONTINUE WITH GOOGLE ONLY) */}
       {currentScreen === 'signin' && (
         <main className="w-full max-w-sm mx-auto my-auto py-6">
           <Card className="border border-border shadow-sm">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-2xl font-semibold tracking-tight text-foreground">
-                Student Registration
+                Sign in
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground pt-1">
-                Enter your Gmail account below to register your device for event clearance passes.
+              <CardDescription className="text-xs text-muted-foreground pt-1 leading-relaxed">
+                Continue with your Google account to access your event attendance passes and digital clearance card.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="grid gap-4">
-              {/* 1-Click Google Sign In */}
+              {/* Focused: Continue with Google Button Only */}
               <Button
                 variant="outline"
-                size="default"
+                size="lg"
                 type="button"
-                onClick={() => setCurrentScreen('consent')}
-                className="w-full h-10 text-xs font-medium border-border hover:border-foreground/40 gap-2.5"
+                onClick={handleGoogleSignIn}
+                className="w-full h-11 text-xs font-medium border-border hover:border-foreground/40 gap-3"
               >
                 <svg className="size-4 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -194,36 +232,21 @@ export const App: React.FC = () => {
                 <span>Continue with Google</span>
               </Button>
 
-              {/* Subtle Divider */}
-              <div className="relative text-center text-xs after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border my-1">
-                <span className="relative z-10 bg-card px-2 text-[11px] text-muted-foreground uppercase font-medium">
-                  Or enter Gmail
-                </span>
-              </div>
+              <p className="text-center text-[11px] text-muted-foreground leading-normal">
+                Use your institutional or personal Gmail address.
+              </p>
 
-              {/* Email Field */}
-              <div className="grid gap-2 text-left">
-                <Label htmlFor="email" className="text-xs font-medium text-foreground">
-                  Gmail Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="student@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-10 text-xs"
-                />
+              {/* Demo Account State Switcher */}
+              <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>Account test scenario:</span>
+                <button
+                  type="button"
+                  onClick={() => setIsExistingAccount(!isExistingAccount)}
+                  className="font-medium text-foreground underline underline-offset-4 hover:text-primary transition-colors cursor-pointer"
+                >
+                  {isExistingAccount ? '✓ Returning User' : 'New User (Onboard)'}
+                </button>
               </div>
-
-              {/* Submit Action */}
-              <Button
-                type="button"
-                onClick={() => setCurrentScreen('consent')}
-                className="w-full h-10 text-xs font-medium mt-1"
-              >
-                Continue to Student Details
-              </Button>
             </CardContent>
 
             <CardFooter className="flex flex-col gap-2 pt-2">
@@ -239,12 +262,15 @@ export const App: React.FC = () => {
         </main>
       )}
 
-      {/* SCREEN 2: DATA PRIVACY & CONSENT */}
+      {/* SCREEN 2: ONBOARDING STEP 1 - DATA PRIVACY & CONSENT */}
       {currentScreen === 'consent' && (
         <main className="w-full max-w-sm mx-auto my-auto py-6">
           <Card className="border border-border shadow-sm">
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+              <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
+                Onboarding · Step 1 of 3
+              </span>
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
                 Data Privacy & Consent
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
@@ -297,23 +323,26 @@ export const App: React.FC = () => {
                 onClick={() => setCurrentScreen('signin')}
                 className="w-full h-8 text-xs text-muted-foreground hover:text-foreground"
               >
-                Back to Sign In
+                Cancel
               </Button>
             </CardFooter>
           </Card>
         </main>
       )}
 
-      {/* SCREEN 3: STUDENT DETAILS */}
+      {/* SCREEN 3: ONBOARDING STEP 2 - STUDENT DETAILS FORM */}
       {currentScreen === 'details' && (
         <main className="w-full max-w-sm mx-auto my-auto py-6">
           <Card className="border border-border shadow-sm">
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+              <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
+                Onboarding · Step 2 of 3
+              </span>
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
                 Student Information
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                A school ID can be registered to one device only.
+                Enter your official college records.
               </CardDescription>
             </CardHeader>
 
@@ -416,12 +445,15 @@ export const App: React.FC = () => {
         </main>
       )}
 
-      {/* SCREEN 4: LIVE FACE CHECK */}
+      {/* SCREEN 4: ONBOARDING STEP 3 - LIVE FACE CHECK */}
       {currentScreen === 'photo' && (
         <main className="w-full max-w-sm mx-auto my-auto py-6">
           <Card className="border border-border shadow-sm">
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+              <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
+                Onboarding · Step 3 of 3
+              </span>
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
                 Face Verification
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
@@ -466,7 +498,7 @@ export const App: React.FC = () => {
               <p className="text-[11px] text-muted-foreground max-w-xs leading-normal">
                 {photoDataUrl
                   ? 'Confirm that your face is centered and clearly recognizable.'
-                  : 'Ensure you are in a well-lit area with no heavy shadows.'}
+                  : 'Ensure you are in a well-lit area with no glare.'}
               </p>
             </CardContent>
 
@@ -479,7 +511,7 @@ export const App: React.FC = () => {
                     className="w-full h-10 text-xs font-medium gap-2"
                   >
                     <Check className="size-3.5" />
-                    <span>Confirm & Submit</span>
+                    <span>Confirm & Complete Registration</span>
                   </Button>
                   <Button
                     type="button"
@@ -575,14 +607,204 @@ export const App: React.FC = () => {
             <CardFooter className="flex flex-col gap-2 pt-2">
               <Button
                 type="button"
-                variant="outline"
+                onClick={() => {
+                  setIsExistingAccount(true);
+                  setCurrentScreen('pass');
+                }}
+                className="w-full h-10 text-xs font-medium gap-2"
+              >
+                <UserCheck className="size-3.5" />
+                <span>Simulate SBO Approval & Open Pass</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => {
                   setPhotoDataUrl(null);
                   setCurrentScreen('signin');
                 }}
-                className="w-full h-9 text-xs text-muted-foreground hover:text-foreground"
+                className="w-full h-8 text-xs text-muted-foreground hover:text-foreground"
               >
                 Back to Sign In
+              </Button>
+            </CardFooter>
+          </Card>
+        </main>
+      )}
+
+      {/* SCREEN 6: ACTIVE ROTATING QR CLEARANCE PASS (DASHBOARD FOR APPROVED USERS) */}
+      {currentScreen === 'pass' && (
+        <main className="w-full max-w-sm mx-auto my-auto py-6">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="text-center pb-4">
+              <span className="text-[11px] font-medium tracking-widest uppercase text-emerald-600 dark:text-emerald-500">
+                Active Clearance Pass
+              </span>
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
+                CIT Intramurals 2026
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Tagoloan Community College
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="flex flex-col items-center gap-5 text-center">
+              {/* Dynamic QR Pass */}
+              <div className="p-4 border border-border rounded-xl bg-card flex flex-col items-center shadow-xs">
+                <div className="size-48 rounded-lg bg-foreground text-background flex items-center justify-center p-3 relative">
+                  <QrCode className="size-36 text-background" />
+                  <div className="absolute top-2 right-2 bg-emerald-500 text-slate-950 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">
+                    LIVE
+                  </div>
+                </div>
+
+                <div className="w-full mt-3 flex items-center justify-between text-xs font-mono text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-foreground font-sans text-xs">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Auto-rotates</span>
+                  </span>
+                  <span>{passCountdown}s</span>
+                </div>
+                <div className="w-full bg-muted h-1 rounded-full overflow-hidden mt-1">
+                  <div
+                    className="bg-foreground h-full transition-all duration-1000 ease-linear"
+                    style={{ width: `${(passCountdown / 30) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Student Metadata */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {fullName}
+                </h3>
+                <p className="text-xs font-mono text-muted-foreground">
+                  {department} {yearLevel} · Section {section} · ID {schoolId}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <ShieldCheck className="size-3.5 text-emerald-600" />
+                <span>ECDSA Cryptographically Bound</span>
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-2 pt-2">
+              <Button
+                type="button"
+                onClick={() => setCurrentScreen('activity-card')}
+                className="w-full h-10 text-xs font-medium gap-2"
+              >
+                <FileText className="size-3.5" />
+                <span>View Clearance Activity Card</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setCurrentScreen('signin')}
+                className="w-full h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+              >
+                <LogOut className="size-3" />
+                <span>Sign Out</span>
+              </Button>
+            </CardFooter>
+          </Card>
+        </main>
+      )}
+
+      {/* SCREEN 7: 5-DAY CLEARANCE MATRIX CARD */}
+      {currentScreen === 'activity-card' && (
+        <main className="w-full max-w-sm mx-auto my-auto py-6">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="text-center pb-4">
+              <div className="flex items-center justify-between pb-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentScreen('pass')}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  <span>Pass</span>
+                </button>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  CIT-2026-0081
+                </span>
+              </div>
+
+              <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground block">
+                Official Clearance Card
+              </span>
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
+                CIT Intramurals 2026
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                {fullName} · {section} · ID {schoolId}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="flex flex-col gap-3">
+              {[
+                { day: 'Day 1', date: 'Nov 10', slots: ['In: 07:54 AM ✓', 'Out: 11:45 AM ✓', 'In: 01:10 PM ✓', 'Out: 05:02 PM ✓'], cleared: true },
+                { day: 'Day 2', date: 'Nov 11', slots: ['In: 08:02 AM ✓', 'Out: 11:50 AM ✓', 'In: Pending', 'Out: Pending'], cleared: false },
+                { day: 'Day 3', date: 'Nov 12', slots: ['In: Pending', 'Out: Pending', 'In: Pending', 'Out: Pending'], cleared: false },
+                { day: 'Day 4', date: 'Nov 13', slots: ['In: Pending', 'Out: Pending', 'In: Pending', 'Out: Pending'], cleared: false },
+                { day: 'Day 5', date: 'Nov 14', slots: ['In: Pending', 'Out: Pending', 'In: Pending', 'Out: Pending'], cleared: false },
+              ].map((item, index) => (
+                <div
+                  key={item.day}
+                  className={`border border-border rounded-lg p-2.5 text-xs flex flex-col gap-1.5 ${
+                    item.cleared ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-muted/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-medium">
+                    <span className="font-semibold text-foreground text-xs">
+                      {item.day} · {item.date}
+                    </span>
+                    {item.cleared ? (
+                      <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="size-3" />
+                        <span>Cleared</span>
+                      </span>
+                    ) : index === 1 ? (
+                      <span className="text-[10px] text-amber-600 font-medium">In Progress</span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground font-normal">Upcoming</span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1 font-mono text-[10px] text-muted-foreground">
+                    {item.slots.map((s, idx) => (
+                      <div
+                        key={idx}
+                        className={`px-2 py-0.5 rounded ${
+                          s.includes('✓') ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-medium' : 'bg-muted/30'
+                        }`}
+                      >
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => alert('Exporting card as PDF/PNG...')}
+                className="w-full h-10 text-xs font-medium gap-2"
+              >
+                <Download className="size-3.5" />
+                <span>Export Activity Card (PDF)</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setCurrentScreen('pass')}
+                className="w-full h-8 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Back to QR Pass
               </Button>
             </CardFooter>
           </Card>
