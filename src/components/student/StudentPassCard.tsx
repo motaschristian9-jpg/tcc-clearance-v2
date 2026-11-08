@@ -131,6 +131,21 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
               </span>
             </div>
           </div>
+
+          {/* SBO Scanner Approval Notice */}
+          <div className="border border-border rounded-lg p-2.5 bg-muted/10 text-xs w-full flex items-center justify-between text-left">
+            <div className="flex flex-col">
+              <span className="font-semibold text-foreground text-[11px]">
+                Clearance Verification
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                Approved when SBO officer scans your Time In/Out
+              </span>
+            </div>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+              Ready to Scan
+            </span>
+          </div>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-2 pt-2">
@@ -157,3 +172,4 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
     </main>
   );
 };
+

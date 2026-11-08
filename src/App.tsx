@@ -5,7 +5,6 @@ import { OtpVerificationCard } from '@/components/student/OtpVerificationCard';
 import { ConsentCard } from '@/components/student/ConsentCard';
 import { StudentDetailsCard } from '@/components/student/StudentDetailsCard';
 import { PhotoCaptureCard } from '@/components/student/PhotoCaptureCard';
-import { WaitingApprovalCard } from '@/components/student/WaitingApprovalCard';
 import { StudentPassCard } from '@/components/student/StudentPassCard';
 import { ClearanceMatrixCard } from '@/components/student/ClearanceMatrixCard';
 
@@ -13,12 +12,12 @@ export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<StudentScreen>('signin');
   const [loginScenario, setLoginScenario] = useState<LoginScenario>('new');
 
-  // Student Profile State
+  // Student Profile State (no dashes in school ID or section)
   const [fullName, setFullName] = useState<string>('Alexander M. Cruz');
-  const [schoolId, setSchoolId] = useState<string>('2023-01842');
+  const [schoolId, setSchoolId] = useState<string>('20241373');
   const [department, setDepartment] = useState<string>('CIT');
   const [yearLevel, setYearLevel] = useState<string>('3');
-  const [section, setSection] = useState<string>('3-A');
+  const [section, setSection] = useState<string>('3A');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
 
   // Dynamic Pass countdown (30s)
@@ -106,23 +105,8 @@ export const App: React.FC = () => {
           photoDataUrl={photoDataUrl}
           onPhotoCaptured={setPhotoDataUrl}
           onRetake={() => setPhotoDataUrl(null)}
-          onNext={() => setCurrentScreen('waiting')}
+          onNext={() => setCurrentScreen('pass')}
           onBack={() => setCurrentScreen('details')}
-        />
-      )}
-
-      {currentScreen === 'waiting' && (
-        <WaitingApprovalCard
-          fullName={fullName}
-          schoolId={schoolId}
-          department={department}
-          section={section}
-          photoDataUrl={photoDataUrl}
-          onApprove={() => setCurrentScreen('pass')}
-          onBackToSignIn={() => {
-            setPhotoDataUrl(null);
-            setCurrentScreen('signin');
-          }}
         />
       )}
 

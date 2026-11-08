@@ -127,7 +127,7 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
             Face Verification Check
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Position your face inside the circle for SBO officer verification.
+            Capture your photo. SBO officers will cross-verify this during pass scan at the event.
           </CardDescription>
         </CardHeader>
 
@@ -202,7 +202,7 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
             onClick={onNext}
             className="w-full h-10 text-xs font-medium"
           >
-            Submit for SBO Approval
+            Complete & Open Student Pass
           </Button>
           <Button
             type="button"
@@ -217,3 +217,4 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
     </main>
   );
 };
+

@@ -81,10 +81,10 @@ export const StudentDetailsCard: React.FC<StudentDetailsCardProps> = ({
                 id="schoolid"
                 value={schoolId}
                 onChange={(e) => setSchoolId(e.target.value)}
-                placeholder="2023-01842"
+                placeholder="e.g. 20241373"
                 className="h-10 text-xs font-mono"
               />
-              <FieldDescription>Issued by TCC Registrar.</FieldDescription>
+              <FieldDescription>8-digit student ID issued by TCC Registrar.</FieldDescription>
             </Field>
 
             <Field>
@@ -125,7 +125,7 @@ export const StudentDetailsCard: React.FC<StudentDetailsCardProps> = ({
                   id="section"
                   value={section}
                   onChange={(e) => setSection(e.target.value)}
-                  placeholder="3-A"
+                  placeholder="e.g. 3A"
                   className="h-10 text-xs font-mono"
                 />
               </Field>
@@ -154,3 +154,4 @@ export const StudentDetailsCard: React.FC<StudentDetailsCardProps> = ({
     </main>
   );
 };
+

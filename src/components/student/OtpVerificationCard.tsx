@@ -180,3 +180,4 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
     </main>
   );
 };
+

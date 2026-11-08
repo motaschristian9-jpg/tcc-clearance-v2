@@ -4,7 +4,6 @@ export type StudentScreen =
   | 'consent'
   | 'details'
   | 'photo'
-  | 'waiting'
   | 'pass'
   | 'activity-card';
 
@@ -35,3 +34,4 @@ export const TCC_DEPARTMENTS: DepartmentOption[] = [
   { code: 'COM', name: 'College of Maritime' },
   { code: 'CLIS', name: 'College of Library & Information Science' },
 ];
+
