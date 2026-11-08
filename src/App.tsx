@@ -9,7 +9,19 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+} from '@/components/ui/field';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  InputOTPSeparator,
+} from '@/components/ui/input-otp';
 import { 
   Camera, 
   RefreshCw, 
@@ -22,20 +34,33 @@ import {
   Download,
   CheckCircle2,
   LogOut,
-  UserCheck
+  UserCheck,
+  Smartphone,
+  ShieldAlert
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Screen sequence:
   // - 'signin': Neutral Google sign in entry
+  // - 'otp': Device transfer verification (when logging in on another device)
   // - Onboarding (for new accounts): 'consent' -> 'details' -> 'photo' -> 'waiting'
   // - Authenticated Dashboard (for existing accounts): 'pass' -> 'activity-card'
   const [currentScreen, setCurrentScreen] = useState<
-    'signin' | 'consent' | 'details' | 'photo' | 'waiting' | 'pass' | 'activity-card'
+    'signin' | 'otp' | 'consent' | 'details' | 'photo' | 'waiting' | 'pass' | 'activity-card'
   >('signin');
 
-  // Simulation state: whether Google sign-in detects a new user vs returning approved user
-  const [isExistingAccount, setIsExistingAccount] = useState<boolean>(false);
+  // Simulation state: whether Google sign-in detects:
+  // - 'new': First-time user -> onboarding flow
+  // - 'same-device': Existing user on same authorized device -> direct pass
+  // - 'new-device': Existing user on a different device -> OTP device verification required
+  type LoginScenario = 'new' | 'same-device' | 'new-device';
+  const [loginScenario, setLoginScenario] = useState<LoginScenario>('new-device');
+
+  // OTP Verification State (Device Transfer)
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState<number>(45);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
 
   // Student Profile State
   const [fullName, setFullName] = useState<string>('Alexander M. Cruz');
@@ -161,15 +186,45 @@ export const App: React.FC = () => {
     setPhotoDataUrl(dataUrl);
   };
 
+  // OTP resend countdown effect
+  useEffect(() => {
+    if (currentScreen === 'otp' && resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentScreen, resendTimer]);
+
   // Google Sign-In Handler
   const handleGoogleSignIn = () => {
-    if (isExistingAccount) {
-      // Returning registered & approved user -> goes directly to their active clearance pass
-      setCurrentScreen('pass');
-    } else {
+    if (loginScenario === 'new') {
       // New user -> starts the one-time registration & onboarding process
       setCurrentScreen('consent');
+    } else if (loginScenario === 'same-device') {
+      // Returning user on same authorized device -> direct to pass
+      setCurrentScreen('pass');
+    } else {
+      // Returning user logging in on another/new device -> OTP device transfer verification
+      setOtpCode('');
+      setOtpError(null);
+      setResendTimer(45);
+      setCurrentScreen('otp');
     }
+  };
+
+  // OTP Verification Handler
+  const handleVerifyOtp = () => {
+    if (otpCode.length !== 6) {
+      setOtpError('Please enter the full 6-digit verification code.');
+      return;
+    }
+    setIsVerifyingOtp(true);
+    setTimeout(() => {
+      setIsVerifyingOtp(false);
+      // Device successfully authorized and bound
+      setCurrentScreen('pass');
+    }, 650);
   };
 
   return (
@@ -237,15 +292,43 @@ export const App: React.FC = () => {
               </p>
 
               {/* Demo Account State Switcher */}
-              <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Account test scenario:</span>
-                <button
-                  type="button"
-                  onClick={() => setIsExistingAccount(!isExistingAccount)}
-                  className="font-medium text-foreground underline underline-offset-4 hover:text-primary transition-colors cursor-pointer"
-                >
-                  {isExistingAccount ? '✓ Returning User' : 'New User (Onboard)'}
-                </button>
+              <div className="pt-2 border-t border-border/60 flex flex-col gap-1.5 text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">Test login scenario:</span>
+                <div className="grid grid-cols-3 gap-1 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setLoginScenario('new')}
+                    className={`px-2 py-1 rounded text-[10px] font-medium border transition-colors cursor-pointer text-center ${
+                      loginScenario === 'new'
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    New User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginScenario('same-device')}
+                    className={`px-2 py-1 rounded text-[10px] font-medium border transition-colors cursor-pointer text-center ${
+                      loginScenario === 'same-device'
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Same Device
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginScenario('new-device')}
+                    className={`px-2 py-1 rounded text-[10px] font-medium border transition-colors cursor-pointer text-center ${
+                      loginScenario === 'new-device'
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Other Device
+                  </button>
+                </div>
               </div>
             </CardContent>
 
@@ -257,6 +340,127 @@ export const App: React.FC = () => {
                 </a>{' '}
                 (RA 10173).
               </p>
+            </CardFooter>
+          </Card>
+        </main>
+      )}
+
+      {/* SCREEN: OTP DEVICE VERIFICATION (LOGIN FROM ANOTHER DEVICE) */}
+      {currentScreen === 'otp' && (
+        <main className="w-full max-w-sm mx-auto my-auto py-6">
+          <Card className="border border-border shadow-sm">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto size-10 rounded-full border border-border bg-muted/20 flex items-center justify-center mb-2">
+                <Smartphone className="size-5 text-foreground" />
+              </div>
+              <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
+                Security Check · Device Transfer
+              </span>
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
+                Verify your device
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
+                A 6-digit one-time code was sent to <span className="font-medium text-foreground">al••••••z@gmail.com</span> to authorize this device.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="flex flex-col gap-4 text-xs">
+              {/* OTP Input using shadcn Field and InputOTP */}
+              <Field className="items-center text-center">
+                <FieldLabel htmlFor="otp-input" className="text-xs font-medium text-foreground">
+                  Enter 6-digit verification code
+                </FieldLabel>
+                <div className="pt-2 pb-1 flex justify-center w-full">
+                  <InputOTP
+                    id="otp-input"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(val) => {
+                      setOtpCode(val);
+                      if (otpError) setOtpError(null);
+                    }}
+                    autoFocus
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                    </InputOTPGroup>
+                    <InputOTPSeparator />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                {otpError ? (
+                  <FieldError className="text-center">{otpError}</FieldError>
+                ) : (
+                  <FieldDescription className="text-center text-[11px]">
+                    Input the code from your email to bind your pass.
+                  </FieldDescription>
+                )}
+              </Field>
+
+              {/* Security Policy Information */}
+              <div className="border border-border rounded-lg p-3 bg-muted/20 text-xs flex gap-2.5 items-start">
+                <ShieldAlert className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="font-semibold text-foreground text-[11px]">
+                    Single Active Device Policy
+                  </span>
+                  <p className="text-muted-foreground text-[11px] leading-relaxed">
+                    Authorizing this device will invalidate your active clearance pass on your previous phone or browser.
+                  </p>
+                </div>
+              </div>
+
+              {/* Resend Code Section */}
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/60">
+                <span>Didn't receive the email?</span>
+                {resendTimer > 0 ? (
+                  <span className="font-mono text-[11px]">Resend in {resendTimer}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResendTimer(45);
+                      setOtpCode('839102'); // demo filler code
+                      setOtpError(null);
+                    }}
+                    className="font-medium text-foreground underline underline-offset-4 hover:text-primary cursor-pointer"
+                  >
+                    Resend code
+                  </button>
+                )}
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-2 pt-2">
+              <Button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={otpCode.length < 6 || isVerifyingOtp}
+                className="w-full h-10 text-xs font-medium"
+              >
+                {isVerifyingOtp ? (
+                  <span className="inline-flex items-center gap-2">
+                    <RefreshCw className="size-3.5 animate-spin" />
+                    Authorizing Device...
+                  </span>
+                ) : (
+                  'Verify & Authorize Device'
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setCurrentScreen('signin')}
+                className="w-full h-8 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel & Return
+              </Button>
             </CardFooter>
           </Card>
         </main>
@@ -346,82 +550,76 @@ export const App: React.FC = () => {
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="grid gap-3.5 text-left text-xs">
-              <div className="grid gap-1.5">
-                <Label htmlFor="fullname" className="text-xs font-medium text-foreground">
-                  Full Name (First, Middle, Last)
-                </Label>
-                <Input
-                  id="fullname"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Alexander M. Cruz"
-                  className="h-10 text-xs"
-                />
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="schoolid" className="text-xs font-medium text-foreground">
-                  School ID Number
-                </Label>
-                <Input
-                  id="schoolid"
-                  value={schoolId}
-                  onChange={(e) => setSchoolId(e.target.value)}
-                  placeholder="2023-01842"
-                  className="h-10 text-xs font-mono"
-                />
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="department" className="text-xs font-medium text-foreground">
-                  College / Department
-                </Label>
-                <select
-                  id="department"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground font-sans"
-                >
-                  {departments.map((dept) => (
-                    <option key={dept.code} value={dept.code}>
-                      {dept.code} · {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="yearlevel" className="text-xs font-medium text-foreground">
-                    Year Level
-                  </Label>
-                  <select
-                    id="yearlevel"
-                    value={yearLevel}
-                    onChange={(e) => setYearLevel(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground font-sans"
-                  >
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                  </select>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label htmlFor="section" className="text-xs font-medium text-foreground">
-                    Section
-                  </Label>
+            <CardContent className="text-left text-xs">
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="fullname">Full Name (First, Middle, Last)</FieldLabel>
                   <Input
-                    id="section"
-                    value={section}
-                    onChange={(e) => setSection(e.target.value)}
-                    placeholder="3-A"
+                    id="fullname"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Alexander M. Cruz"
+                    className="h-10 text-xs"
+                  />
+                  <FieldDescription>Must match your official college enrollment record.</FieldDescription>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="schoolid">School ID Number</FieldLabel>
+                  <Input
+                    id="schoolid"
+                    value={schoolId}
+                    onChange={(e) => setSchoolId(e.target.value)}
+                    placeholder="2023-01842"
                     className="h-10 text-xs font-mono"
                   />
+                  <FieldDescription>Issued by TCC Registrar.</FieldDescription>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="department">College / Department</FieldLabel>
+                  <select
+                    id="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground font-sans"
+                  >
+                    {departments.map((dept) => (
+                      <option key={dept.code} value={dept.code}>
+                        {dept.code} · {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="yearlevel">Year Level</FieldLabel>
+                    <select
+                      id="yearlevel"
+                      value={yearLevel}
+                      onChange={(e) => setYearLevel(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground font-sans"
+                    >
+                      <option value="1">1st Year</option>
+                      <option value="2">2nd Year</option>
+                      <option value="3">3rd Year</option>
+                      <option value="4">4th Year</option>
+                    </select>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="section">Section</FieldLabel>
+                    <Input
+                      id="section"
+                      value={section}
+                      onChange={(e) => setSection(e.target.value)}
+                      placeholder="3-A"
+                      className="h-10 text-xs font-mono"
+                    />
+                  </Field>
                 </div>
-              </div>
+              </FieldGroup>
             </CardContent>
 
             <CardFooter className="flex flex-col gap-2 pt-2">
@@ -608,7 +806,7 @@ export const App: React.FC = () => {
               <Button
                 type="button"
                 onClick={() => {
-                  setIsExistingAccount(true);
+                  setLoginScenario('same-device');
                   setCurrentScreen('pass');
                 }}
                 className="w-full h-10 text-xs font-medium gap-2"
