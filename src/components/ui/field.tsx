@@ -68,7 +68,7 @@ function FieldLabel({ className, ...props }: React.ComponentProps<"label">) {
     <label
       data-slot="field-label"
       className={cn(
-        "text-xs font-medium leading-none select-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 group-data-[disabled]/field:opacity-50",
+        "text-xs font-medium leading-none select-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 group-data-[disabled]/field:opacity-50 group-data-[invalid=true]/field:text-destructive transition-colors",
         className
       )}
       {...props}

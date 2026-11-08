@@ -12,13 +12,27 @@ export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<StudentScreen>('signin');
   const [loginScenario, setLoginScenario] = useState<LoginScenario>('new');
 
-  // Student Profile State (no dashes in school ID or section)
-  const [fullName, setFullName] = useState<string>('Alexander M. Cruz');
-  const [schoolId, setSchoolId] = useState<string>('20241373');
+  // Student Profile State (starts empty for new registration)
+  const [fullName, setFullName] = useState<string>('');
+  const [schoolId, setSchoolId] = useState<string>('');
   const [department, setDepartment] = useState<string>('CIT');
   const [yearLevel, setYearLevel] = useState<string>('3');
-  const [section, setSection] = useState<string>('3A');
+  const [section, setSection] = useState<string>('');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+
+  const handleScenarioChange = (scenario: LoginScenario) => {
+    setLoginScenario(scenario);
+    if (scenario === 'new') {
+      setFullName('');
+      setSchoolId('');
+      setSection('');
+      setPhotoDataUrl(null);
+    } else {
+      setFullName('Alexander M. Cruz');
+      setSchoolId('20241373');
+      setSection('3A');
+    }
+  };
 
   // Dynamic Pass countdown (30s)
   const [passCountdown, setPassCountdown] = useState<number>(24);
@@ -63,7 +77,7 @@ export const App: React.FC = () => {
       {currentScreen === 'signin' && (
         <SignInCard
           loginScenario={loginScenario}
-          onScenarioChange={setLoginScenario}
+          onScenarioChange={handleScenarioChange}
           onContinue={handleGoogleSignInContinue}
         />
       )}
