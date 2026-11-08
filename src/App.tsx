@@ -1,391 +1,98 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ThemeProvider,
-  CssBaseline,
-  Container,
-  Box,
-  Typography,
-  Button,
-  Divider,
-  Stack,
-} from '@mui/material';
-import { theme } from './theme';
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 export const App: React.FC = () => {
-  // Screen sequence: 'signin' -> 'consent'
-  const [currentScreen, setCurrentScreen] = useState<'signin' | 'consent'>('signin');
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box
-        sx={{
-          minHeight: '100vh',
-          backgroundColor: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          px: { xs: 2.5, sm: 4 },
-          py: { xs: 5, sm: 8 },
-        }}
-      >
-        {/* Top Header */}
-        <Container maxWidth="sm" disableGutters>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              pb: 3,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                sx={{
-                  px: 1.25,
-                  py: 0.5,
-                  border: '1px solid #0f172a',
-                  borderRadius: 1,
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.05em',
-                  color: '#0f172a',
-                }}
-              >
-                TCC
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: '#0f172a',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Clearance System
-              </Typography>
-            </Box>
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between p-6 sm:p-10 selection:bg-primary selection:text-primary-foreground">
+      {/* Top Header - Understated branding */}
+      <header className="max-w-md mx-auto w-full flex items-center justify-between pb-4">
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-md border border-foreground/20 flex items-center justify-center text-xs font-bold tracking-wider text-foreground">
+            TCC
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-foreground">
+            Clearance System
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground font-normal">
+          Tagoloan Community College
+        </span>
+      </header>
 
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#64748b',
-                fontSize: '0.75rem',
-              }}
+      {/* Main Stage: Simple Bordered Box via shadcn Card */}
+      <main className="max-w-md mx-auto w-full my-auto py-8">
+        <Card className="border border-border shadow-sm">
+          <CardHeader className="text-center pb-6">
+            <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
+              Student Registration
+            </span>
+            <CardTitle className="text-2xl sm:text-3xl font-light tracking-tight mt-1 text-foreground">
+              Sign in with Gmail
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground pt-1 max-w-xs mx-auto leading-relaxed">
+              Register your device to access your TCC event attendance passes and digital clearance card.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="flex flex-col gap-4">
+            {/* Primary Action: Continue with Google Button */}
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full h-12 text-sm font-medium border-border hover:border-foreground/40 gap-3"
             >
-              Tagoloan Community College
-            </Typography>
-          </Box>
-        </Container>
+              {/* Google SVG Icon */}
+              <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </Button>
 
-        {/* SCREEN 1: SIGN IN WITH GMAIL (SIMPLE BORDERED BOX) */}
-        {currentScreen === 'signin' && (
-          <Container maxWidth="sm" disableGutters sx={{ my: 'auto', py: 4 }}>
-            <Box
-              sx={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1', // Simple, distinct border
-                borderRadius: 2.5,
-                p: { xs: 4, sm: 6 },
-              }}
-            >
-              <Stack spacing={4} sx={{ textAlign: 'center', alignItems: 'center' }}>
-                {/* Header text */}
-                <Stack spacing={1} sx={{ alignItems: 'center' }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: '#64748b',
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                    }}
-                  >
-                    Student Registration · Step 1
-                  </Typography>
+            <p className="text-[11px] text-center text-muted-foreground font-normal">
+              Use your personal or institutional Gmail address.
+            </p>
+          </CardContent>
 
-                  <Typography
-                    variant="h5"
-                    component="h1"
-                    sx={{
-                      fontWeight: 600,
-                      letterSpacing: '-0.02em',
-                      color: '#0f172a',
-                    }}
-                  >
-                    Sign in with Gmail
-                  </Typography>
+          <CardFooter className="flex flex-col gap-4 pt-2">
+            <Separator />
+            <p className="text-xs text-center text-muted-foreground font-normal">
+              Baluarte, Tagoloan, Misamis Oriental
+            </p>
+          </CardFooter>
+        </Card>
+      </main>
 
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: '#64748b',
-                      lineHeight: 1.6,
-                      maxWidth: 340,
-                      pt: 0.5,
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Register your device to access your TCC event attendance passes and digital clearance card.
-                  </Typography>
-                </Stack>
-
-                {/* Core Action: Continue with Google Button */}
-                <Stack spacing={2} sx={{ width: '100%' }}>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={() => setCurrentScreen('consent')}
-                    startIcon={
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <path
-                          fill="#4285F4"
-                          d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                        />
-                        <path
-                          fill="#34A853"
-                          d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                        />
-                        <path
-                          fill="#FBBC05"
-                          d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-                        />
-                        <path
-                          fill="#EA4335"
-                          d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                        />
-                      </svg>
-                    }
-                    sx={{
-                      minHeight: 50,
-                      borderRadius: 1.5,
-                      border: '1px solid #94a3b8',
-                      color: '#0f172a',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      backgroundColor: '#ffffff',
-                      '&:hover': {
-                        border: '1px solid #0f172a',
-                        backgroundColor: '#f8fafc',
-                      },
-                    }}
-                  >
-                    Continue with Google
-                  </Button>
-
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#94a3b8',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Use your personal or institutional Gmail address.
-                  </Typography>
-                </Stack>
-
-                <Divider sx={{ width: '100%', borderColor: '#e2e8f0' }} />
-
-                {/* Footnote */}
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: '#94a3b8',
-                    display: 'block',
-                    fontSize: '0.75rem',
-                  }}
-                >
-                  Baluarte, Tagoloan, Misamis Oriental
-                </Typography>
-              </Stack>
-            </Box>
-          </Container>
-        )}
-
-        {/* SCREEN 2: DATA PRIVACY & CONSENT (SIMPLE BORDERED BOX) */}
-        {currentScreen === 'consent' && (
-          <Container maxWidth="sm" disableGutters sx={{ my: 'auto', py: 4 }}>
-            <Box
-              sx={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1', // Simple, distinct border
-                borderRadius: 2.5,
-                p: { xs: 4, sm: 6 },
-              }}
-            >
-              <Stack spacing={4} sx={{ textAlign: 'center', alignItems: 'center' }}>
-                {/* Header text */}
-                <Stack spacing={1} sx={{ alignItems: 'center' }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: '#64748b',
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                    }}
-                  >
-                    Student Registration · Step 2
-                  </Typography>
-
-                  <Typography
-                    variant="h5"
-                    component="h1"
-                    sx={{
-                      fontWeight: 600,
-                      letterSpacing: '-0.02em',
-                      color: '#0f172a',
-                    }}
-                  >
-                    Data Privacy & Consent
-                  </Typography>
-
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: '#94a3b8',
-                      fontSize: '0.7rem',
-                    }}
-                  >
-                    Republic Act No. 10173
-                  </Typography>
-                </Stack>
-
-                {/* 3-part disclosure inside clean bordered section */}
-                <Stack
-                  spacing={2.5}
-                  sx={{
-                    width: '100%',
-                    textAlign: 'left',
-                    p: 3,
-                    borderRadius: 1.5,
-                    border: '1px solid #e2e8f0',
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: '#0f172a',
-                        fontSize: '0.725rem',
-                        mb: 0.5,
-                      }}
-                    >
-                      What we collect
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.825rem', lineHeight: 1.55 }}>
-                      Your full name, school ID number, department, year level, section, and a live front-camera verification photo.
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: '#0f172a',
-                        fontSize: '0.725rem',
-                        mb: 0.5,
-                      }}
-                    >
-                      Why it is collected
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.825rem', lineHeight: 1.55 }}>
-                      Exclusively for verifying event attendance, issuing digital clearance stamps, and preventing card forgery.
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: '#0f172a',
-                        fontSize: '0.725rem',
-                        mb: 0.5,
-                      }}
-                    >
-                      Data retention
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.825rem', lineHeight: 1.55 }}>
-                      Records are retained solely for the official academic semester clearance cycle and purged upon clearance archiving.
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                {/* Actions */}
-                <Stack spacing={1.5} sx={{ width: '100%' }}>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    sx={{
-                      minHeight: 50,
-                      borderRadius: 1.5,
-                      backgroundColor: '#0f172a',
-                      color: '#ffffff',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: '#1e293b',
-                      },
-                    }}
-                  >
-                    I Agree & Continue
-                  </Button>
-
-                  <Button
-                    variant="text"
-                    fullWidth
-                    onClick={() => setCurrentScreen('signin')}
-                    sx={{
-                      color: '#64748b',
-                      fontSize: '0.8rem',
-                      fontWeight: 500,
-                      py: 1,
-                      '&:hover': {
-                        backgroundColor: 'transparent',
-                        color: '#0f172a',
-                      },
-                    }}
-                  >
-                    Back to Sign In
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
-          </Container>
-        )}
-
-        {/* Subtle Footer */}
-        <Container maxWidth="sm" disableGutters>
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              textAlign: 'center',
-              color: '#94a3b8',
-              fontSize: '0.725rem',
-            }}
-          >
-            Compliant with RA 10173 (Data Privacy Act of 2012)
-          </Typography>
-        </Container>
-      </Box>
-    </ThemeProvider>
+      {/* Quiet Footer */}
+      <footer className="max-w-md mx-auto w-full text-center pt-4">
+        <p className="text-[11px] text-muted-foreground font-normal">
+          Compliant with RA 10173 (Data Privacy Act of 2012)
+        </p>
+      </footer>
+    </div>
   );
 };
 
