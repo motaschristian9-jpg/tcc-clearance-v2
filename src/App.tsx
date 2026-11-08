@@ -10,6 +10,16 @@ import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { StudentPassCard } from '@/components/student/StudentPassCard';
 import { ClearanceMatrixCard } from '@/components/student/ClearanceMatrixCard';
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import {
   getSupabase,
   signOutUser,
   fetchStudentProfile,
@@ -26,6 +36,9 @@ export const App: React.FC = () => {
   // Current active screen in student flow
   const [currentScreen, setCurrentScreen] = useState<StudentScreen>('signin');
   const [authUser, setAuthUser] = useState<User | null>(null);
+
+  // Sign out confirmation dialog state
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
 
   // Student Profile State
   const [studentDbId, setStudentDbId] = useState<string | null>(null);
@@ -48,7 +61,7 @@ export const App: React.FC = () => {
     }
   }, [currentScreen]);
 
-  // Intramurals Attendance Records for Clearance Card Matrix
+  // Intramurals Attendance Records for Clearance Card Matrix (starts fresh)
   const [attendanceRecords] = useState<DayAttendance[]>([
     { day: 'Day 1', date: 'Nov 10', slots: {}, cleared: false },
     { day: 'Day 2', date: 'Nov 11', slots: {}, cleared: false },
@@ -125,7 +138,8 @@ export const App: React.FC = () => {
     setCurrentScreen('dashboard');
   };
 
-  const handleSignOut = async () => {
+  const handleConfirmSignOut = async () => {
+    setShowSignOutDialog(false);
     await signOutUser();
     setAuthUser(null);
     resetFormState();
@@ -204,7 +218,7 @@ export const App: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleSignOut}
+                onClick={() => setShowSignOutDialog(true)}
                 className="h-8 text-xs gap-1.5 cursor-pointer"
               >
                 <LogOut className="size-3.5" />
@@ -230,7 +244,7 @@ export const App: React.FC = () => {
             <OtpVerificationCard
               userEmail={authUser?.email || 'your Google account'}
               onVerified={handleOtpVerified}
-              onCancel={handleSignOut}
+              onCancel={() => setShowSignOutDialog(true)}
             />
           </div>
         )}
@@ -240,7 +254,7 @@ export const App: React.FC = () => {
           <div className="flex-1 flex items-center justify-center py-6">
             <ConsentCard
               onAgree={() => setCurrentScreen('details')}
-              onCancel={handleSignOut}
+              onCancel={() => setShowSignOutDialog(true)}
             />
           </div>
         )}
@@ -290,7 +304,7 @@ export const App: React.FC = () => {
             attendanceRecords={attendanceRecords}
             onOpenQrPass={() => setCurrentScreen('pass')}
             onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
-            onSignOut={handleSignOut}
+            onSignOut={() => setShowSignOutDialog(true)}
           />
         )}
 
@@ -320,6 +334,27 @@ export const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Global Sign Out Confirmation Alert Dialog */}
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be signed out of your TCC Clearance session on this device. You can sign back in anytime with your Google account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSignOut}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Global Full-Width Footer */}
       <footer className="w-full border-t border-border bg-card/30 mt-auto">

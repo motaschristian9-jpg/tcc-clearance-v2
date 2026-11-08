@@ -1,5 +1,5 @@
 -- ==============================================================================
--- TCC Clearance System - Initial PostgreSQL Schema for Supabase
+-- TCC Clearance System - Complete PostgreSQL Schema for Supabase
 -- Based on: Docs/5. Database Schema — TCC Event Clearance App.pdf
 -- ==============================================================================
 
@@ -107,6 +107,67 @@ create table if not exists public.device_reset_requests (
   created_at timestamptz default now()
 );
 
+-- 7. Events Table
+create table if not exists public.events (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  description text,
+  school_year text not null default '2025-2026',
+  status text not null default 'published' check (status in ('draft', 'published', 'archived')),
+  location_check text not null default 'off' check (location_check in ('off', 'flag', 'block')),
+  approved_by_name text,
+  approved_on timestamptz,
+  created_by uuid references public.profiles(id),
+  published_by uuid references public.profiles(id),
+  version int not null default 1,
+  created_at timestamptz default now()
+);
+
+-- 8. Event Departments Junction Table
+create table if not exists public.event_departments (
+  event_id uuid references public.events(id) on delete cascade,
+  department_id text not null,
+  primary key (event_id, department_id)
+);
+
+-- 9. Event Days Table
+create table if not exists public.event_days (
+  id uuid primary key default uuid_generate_v4(),
+  event_id uuid references public.events(id) on delete cascade,
+  day_no int not null,
+  date text not null, -- e.g. "Nov 10, 2026"
+  created_at timestamptz default now()
+);
+
+-- 10. Slots Table
+create table if not exists public.slots (
+  id uuid primary key default uuid_generate_v4(),
+  event_day_id uuid references public.event_days(id) on delete cascade,
+  order_no int not null,
+  label text not null, -- e.g. "Time In", "Time Out"
+  start_time text,
+  end_time text,
+  signer_name text,
+  signer_position text,
+  created_at timestamptz default now()
+);
+
+-- 11. Attendance Records Table
+create table if not exists public.attendance (
+  id uuid primary key default uuid_generate_v4(),
+  client_uuid uuid unique not null default uuid_generate_v4(),
+  event_id uuid references public.events(id) on delete cascade,
+  slot_id uuid references public.slots(id) on delete cascade,
+  student_id uuid references public.students(id) on delete cascade,
+  scanned_at timestamptz default now(),
+  method text not null default 'qr' check (method in ('qr', 'manual')),
+  location_flag text not null default 'none' check (location_flag in ('none', 'ok', 'far', 'unknown')),
+  status text not null default 'valid' check (status in ('valid', 'duplicate', 'voided')),
+  serial_no text,
+  signature text,
+  synced_at timestamptz default now()
+);
+
 -- Row Level Security (RLS)
 alter table public.departments enable row level security;
 alter table public.profiles enable row level security;
@@ -114,11 +175,20 @@ alter table public.sections enable row level security;
 alter table public.students enable row level security;
 alter table public.student_devices enable row level security;
 alter table public.device_reset_requests enable row level security;
+alter table public.events enable row level security;
+alter table public.event_departments enable row level security;
+alter table public.event_days enable row level security;
+alter table public.slots enable row level security;
+alter table public.attendance enable row level security;
 
 -- RLS Policies
--- Departments & Sections: Read access for all authenticated users
+-- Departments, Sections, Events, Days & Slots: Read access for all authenticated users
 create policy "Allow read departments" on public.departments for select using (true);
 create policy "Allow read sections" on public.sections for select using (true);
+create policy "Allow read events" on public.events for select using (true);
+create policy "Allow read event_departments" on public.event_departments for select using (true);
+create policy "Allow read event_days" on public.event_days for select using (true);
+create policy "Allow read slots" on public.slots for select using (true);
 
 -- Profiles: Users can read and update own profile
 create policy "Users read own profile" on public.profiles
@@ -145,3 +215,8 @@ create policy "Students insert own devices" on public.student_devices
     student_id in (select id from public.students where profile_id = auth.uid())
   );
 
+-- Attendance: Students can read own attendance records
+create policy "Students read own attendance" on public.attendance
+  for select using (
+    student_id in (select id from public.students where profile_id = auth.uid())
+  );
