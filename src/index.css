@@ -52,3 +52,69 @@
     font-family: 'Geist Mono', ui-monospace, monospace;
   }
 }
+
+/* shadcn/typeset styling system */
+:root {
+  --font-geist: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-geist-mono: 'Geist Mono', ui-monospace, monospace;
+}
+
+.typeset {
+  --typeset-font-body: var(--font-geist);
+  --typeset-font-heading: var(--font-geist);
+  --typeset-font-mono: var(--font-geist-mono);
+  --typeset-size: 14px;
+  --typeset-leading: 1.65;
+  --typeset-flow: 0.875rem;
+
+  font-family: var(--typeset-font-body);
+  font-size: var(--typeset-size);
+  line-height: var(--typeset-leading);
+  color: hsl(var(--foreground));
+}
+
+.typeset-docs {
+  --typeset-font-body: var(--font-geist);
+  --typeset-font-heading: var(--font-geist);
+  --typeset-font-mono: var(--font-geist-mono);
+  --typeset-size: 13px;
+  --typeset-leading: 1.7;
+  --typeset-flow: 0.75rem;
+}
+
+.typeset h1,
+.typeset h2,
+.typeset h3,
+.typeset h4 {
+  font-family: var(--typeset-font-heading);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: hsl(var(--foreground));
+}
+
+.typeset p {
+  margin-top: 0;
+  margin-bottom: var(--typeset-flow);
+  color: hsl(var(--muted-foreground));
+}
+
+.typeset p:last-child {
+  margin-bottom: 0;
+}
+
+.typeset strong {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.typeset ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: var(--typeset-flow);
+  color: hsl(var(--muted-foreground));
+}
+
+.typeset li {
+  margin-bottom: 0.25rem;
+}
+
