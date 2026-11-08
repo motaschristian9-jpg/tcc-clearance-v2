@@ -3,26 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --color-bg: #ffffff;
-    --color-text: #0a0a0a;
-    --color-muted: #737373;
-    --color-border: #f0f0f0;
-  }
-
   body {
     @apply bg-white text-neutral-900 antialiased min-h-screen font-sans;
     -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Refined, quiet focus indicator */
-  *:focus-visible {
-    @apply outline-none ring-1 ring-neutral-900 ring-offset-2 ring-offset-white;
-  }
-}
-
-@layer components {
-  .btn-touch {
-    @apply min-h-[48px] inline-flex items-center justify-center font-medium transition-all duration-150 active:scale-[0.99] select-none;
   }
 }
