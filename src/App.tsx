@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ThemeProvider,
   CssBaseline,
@@ -12,6 +12,9 @@ import {
 import { theme } from './theme';
 
 export const App: React.FC = () => {
+  // Screen sequence: 'signin' -> 'consent'
+  const [currentScreen, setCurrentScreen] = useState<'signin' | 'consent'>('signin');
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -58,109 +61,260 @@ export const App: React.FC = () => {
           </Box>
         </Container>
 
-        {/* Main Stage - Generous white spaces, task-oriented action-first */}
-        <Container maxWidth="xs" disableGutters sx={{ my: 'auto', py: { xs: 8, sm: 12 } }}>
-          <Stack spacing={6} sx={{ alignItems: 'center', textAlign: 'center' }}>
-            {/* Title & Description with low cognitive load */}
-            <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                }}
-              >
-                Student Registration
-              </Typography>
+        {/* SCREEN 1: SIGN IN WITH GMAIL */}
+        {currentScreen === 'signin' && (
+          <Container maxWidth="xs" disableGutters sx={{ my: 'auto', py: { xs: 8, sm: 12 } }}>
+            <Stack spacing={6} sx={{ alignItems: 'center', textAlign: 'center' }}>
+              {/* Title & Description with low cognitive load */}
+              <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    fontWeight: 600,
+                  }}
+                >
+                  Student Registration · Step 1
+                </Typography>
 
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
-                  fontWeight: 300,
-                  letterSpacing: '-0.02em',
-                  color: 'text.primary',
-                  lineHeight: 1.2,
-                }}
-              >
-                Sign in with Gmail
-              </Typography>
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{
+                    fontWeight: 300,
+                    letterSpacing: '-0.02em',
+                    color: 'text.primary',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Sign in with Gmail
+                </Typography>
 
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                  lineHeight: 1.6,
-                  maxWidth: 320,
-                  pt: 0.5,
-                }}
-              >
-                Register your device to access your TCC event attendance passes and digital clearance card.
-              </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    lineHeight: 1.6,
+                    maxWidth: 320,
+                    pt: 0.5,
+                  }}
+                >
+                  Register your device to access your TCC event attendance passes and digital clearance card.
+                </Typography>
+              </Stack>
+
+              {/* Single Core Action: Continue with Google */}
+              <Stack spacing={2} sx={{ width: '100%' }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => setCurrentScreen('consent')}
+                  startIcon={
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                  }
+                  sx={{
+                    py: 1.75,
+                    fontSize: '0.925rem',
+                  }}
+                >
+                  Continue with Google
+                </Button>
+
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  Use your personal or institutional Gmail address.
+                </Typography>
+              </Stack>
+
+              {/* Subtle Divider & Location Footnote */}
+              <Box sx={{ width: '100%', pt: 2 }}>
+                <Divider sx={{ mb: 4, borderColor: '#f5f5f5' }} />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Tagoloan Community College · Baluarte, Tagoloan, Misamis Oriental
+                </Typography>
+              </Box>
             </Stack>
+          </Container>
+        )}
 
-            {/* Single Core Action: Continue with Google */}
-            <Stack spacing={2} sx={{ width: '100%' }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
-                  </svg>
-                }
+        {/* SCREEN 2: DATA PRIVACY & CONSENT (RA 10173) */}
+        {currentScreen === 'consent' && (
+          <Container maxWidth="xs" disableGutters sx={{ my: 'auto', py: { xs: 6, sm: 10 } }}>
+            <Stack spacing={5} sx={{ alignItems: 'center', textAlign: 'center' }}>
+              {/* Header Info */}
+              <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    fontWeight: 600,
+                  }}
+                >
+                  Student Registration · Step 2
+                </Typography>
+
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{
+                    fontWeight: 300,
+                    letterSpacing: '-0.02em',
+                    color: 'text.primary',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Data Privacy & Consent
+                </Typography>
+
+                <Typography
+                  variant="caption"
+                  sx={{
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                  }}
+                >
+                  Republic Act No. 10173
+                </Typography>
+              </Stack>
+
+              {/* Minimalist 3-part disclosure with ample whitespace */}
+              <Stack
+                spacing={3.5}
                 sx={{
-                  py: 1.75,
-                  fontSize: '0.925rem',
+                  width: '100%',
+                  textAlign: 'left',
+                  py: 4,
+                  borderTop: '1px solid #f0f0f0',
+                  borderBottom: '1px solid #f0f0f0',
                 }}
               >
-                Continue with Google
-              </Button>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      fontWeight: 600,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: 'text.primary',
+                      mb: 0.5,
+                    }}
+                  >
+                    What we collect
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, fontSize: '0.825rem' }}>
+                    Your full name, school ID number, department, year level, section, and a live front-camera verification photo.
+                  </Typography>
+                </Box>
 
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  fontSize: '0.75rem',
-                }}
-              >
-                Use your personal or institutional Gmail address.
-              </Typography>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      fontWeight: 600,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: 'text.primary',
+                      mb: 0.5,
+                    }}
+                  >
+                    Why it is collected
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, fontSize: '0.825rem' }}>
+                    Exclusively for verifying event attendance, issuing digital clearance stamps, and preventing card forgery.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      fontWeight: 600,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: 'text.primary',
+                      mb: 0.5,
+                    }}
+                  >
+                    Data retention
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, fontSize: '0.825rem' }}>
+                    Records are retained solely for the official academic semester clearance cycle and purged upon clearance archiving.
+                  </Typography>
+                </Box>
+              </Stack>
+
+              {/* Action Buttons */}
+              <Stack spacing={2} sx={{ width: '100%' }}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{
+                    py: 1.75,
+                    fontSize: '0.925rem',
+                  }}
+                >
+                  I Agree & Continue
+                </Button>
+
+                <Button
+                  variant="text"
+                  fullWidth
+                  onClick={() => setCurrentScreen('signin')}
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '0.8rem',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    py: 1,
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      color: 'text.primary',
+                    },
+                  }}
+                >
+                  Back to Sign In
+                </Button>
+              </Stack>
             </Stack>
-
-            {/* Subtle Divider & Location Footnote */}
-            <Box sx={{ width: '100%', pt: 2 }}>
-              <Divider sx={{ mb: 4, borderColor: '#f5f5f5' }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  display: 'block',
-                  lineHeight: 1.5,
-                }}
-              >
-                Tagoloan Community College · Baluarte, Tagoloan, Misamis Oriental
-              </Typography>
-            </Box>
-          </Stack>
-        </Container>
+          </Container>
+        )}
 
         {/* Quiet Footer with Privacy Reference */}
         <Container maxWidth="xs" disableGutters>
