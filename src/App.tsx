@@ -8,7 +8,6 @@ import {
   Button,
   Divider,
   Stack,
-  Paper,
 } from '@mui/material';
 import { theme } from './theme';
 
@@ -22,12 +21,12 @@ export const App: React.FC = () => {
       <Box
         sx={{
           minHeight: '100vh',
-          backgroundColor: '#f8fafc', // Soft, clean off-white background to give the box crisp definition
+          backgroundColor: '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
           px: { xs: 2.5, sm: 4 },
-          py: { xs: 4, sm: 8 },
+          py: { xs: 5, sm: 8 },
         }}
       >
         {/* Top Header */}
@@ -37,23 +36,20 @@ export const App: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              pb: 2,
+              pb: 3,
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box
                 sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1.5,
-                  backgroundColor: '#0f172a',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  px: 1.25,
+                  py: 0.5,
+                  border: '1px solid #0f172a',
+                  borderRadius: 1,
                   fontSize: '0.75rem',
-                  fontWeight: 800,
+                  fontWeight: 700,
                   letterSpacing: '0.05em',
+                  color: '#0f172a',
                 }}
               >
                 TCC
@@ -73,7 +69,7 @@ export const App: React.FC = () => {
             <Typography
               variant="caption"
               sx={{
-                color: 'text.secondary',
+                color: '#64748b',
                 fontSize: '0.75rem',
               }}
             >
@@ -82,16 +78,14 @@ export const App: React.FC = () => {
           </Box>
         </Container>
 
-        {/* SCREEN 1: SIGN IN WITH GMAIL (INSIDE SIMPLE SAAS BOX) */}
+        {/* SCREEN 1: SIGN IN WITH GMAIL (SIMPLE BORDERED BOX) */}
         {currentScreen === 'signin' && (
           <Container maxWidth="sm" disableGutters sx={{ my: 'auto', py: 4 }}>
-            <Paper
-              elevation={0}
+            <Box
               sx={{
                 backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: 4,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.03)',
+                border: '1px solid #cbd5e1', // Simple, distinct border
+                borderRadius: 2.5,
                 p: { xs: 4, sm: 6 },
               }}
             >
@@ -164,15 +158,15 @@ export const App: React.FC = () => {
                       </svg>
                     }
                     sx={{
-                      minHeight: 52,
-                      borderRadius: 2.5,
-                      borderColor: '#cbd5e1',
+                      minHeight: 50,
+                      borderRadius: 1.5,
+                      border: '1px solid #94a3b8',
                       color: '#0f172a',
                       fontSize: '0.9rem',
                       fontWeight: 600,
                       backgroundColor: '#ffffff',
                       '&:hover': {
-                        borderColor: '#0f172a',
+                        border: '1px solid #0f172a',
                         backgroundColor: '#f8fafc',
                       },
                     }}
@@ -191,9 +185,9 @@ export const App: React.FC = () => {
                   </Typography>
                 </Stack>
 
-                <Divider sx={{ width: '100%', borderColor: '#f1f5f9' }} />
+                <Divider sx={{ width: '100%', borderColor: '#e2e8f0' }} />
 
-                {/* Subtitle Footnote */}
+                {/* Footnote */}
                 <Typography
                   variant="caption"
                   sx={{
@@ -205,20 +199,18 @@ export const App: React.FC = () => {
                   Baluarte, Tagoloan, Misamis Oriental
                 </Typography>
               </Stack>
-            </Paper>
+            </Box>
           </Container>
         )}
 
-        {/* SCREEN 2: DATA PRIVACY & CONSENT (INSIDE SIMPLE SAAS BOX) */}
+        {/* SCREEN 2: DATA PRIVACY & CONSENT (SIMPLE BORDERED BOX) */}
         {currentScreen === 'consent' && (
           <Container maxWidth="sm" disableGutters sx={{ my: 'auto', py: 4 }}>
-            <Paper
-              elevation={0}
+            <Box
               sx={{
                 backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: 4,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.03)',
+                border: '1px solid #cbd5e1', // Simple, distinct border
+                borderRadius: 2.5,
                 p: { xs: 4, sm: 6 },
               }}
             >
@@ -263,16 +255,15 @@ export const App: React.FC = () => {
                   </Typography>
                 </Stack>
 
-                {/* 3-part disclosure inside clean container */}
+                {/* 3-part disclosure inside clean bordered section */}
                 <Stack
                   spacing={2.5}
                   sx={{
                     width: '100%',
                     textAlign: 'left',
                     p: 3,
-                    borderRadius: 2.5,
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #f1f5f9',
+                    borderRadius: 1.5,
+                    border: '1px solid #e2e8f0',
                   }}
                 >
                   <Box>
@@ -342,8 +333,8 @@ export const App: React.FC = () => {
                     variant="contained"
                     fullWidth
                     sx={{
-                      minHeight: 52,
-                      borderRadius: 2.5,
+                      minHeight: 50,
+                      borderRadius: 1.5,
                       backgroundColor: '#0f172a',
                       color: '#ffffff',
                       fontSize: '0.9rem',
@@ -375,7 +366,7 @@ export const App: React.FC = () => {
                   </Button>
                 </Stack>
               </Stack>
-            </Paper>
+            </Box>
           </Container>
         )}
 
