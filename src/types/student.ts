@@ -4,8 +4,7 @@ export type StudentScreen =
   | 'consent'
   | 'details'
   | 'photo'
-  | 'pass'
-  | 'activity-card';
+  | 'registered';
 
 export type LoginScenario = 'new' | 'same-device' | 'new-device';
 
@@ -17,6 +16,7 @@ export interface StudentProfile {
   section: string;
   photoDataUrl: string | null;
   isApproved: boolean;
+  email?: string;
 }
 
 export interface DepartmentOption {
@@ -34,4 +34,3 @@ export const TCC_DEPARTMENTS: DepartmentOption[] = [
   { code: 'COM', name: 'College of Maritime' },
   { code: 'CLIS', name: 'College of Library & Information Science' },
 ];
-

@@ -143,7 +143,7 @@ const SelectValue: React.FC<SelectValueProps> = ({
       data-slot="select-value"
       className={cn(
         "truncate block text-left font-sans text-xs",
-        !value && !selectedLabel ? "text-muted-foreground" : "text-foreground",
+        !value && !selectedLabel ? "text-muted-foreground" : "text-foreground font-normal",
         className
       )}
     >
@@ -178,7 +178,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
         className={cn(
           "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs shadow-xs ring-offset-background placeholder:text-muted-foreground",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-          "hover:border-foreground/40 transition-colors cursor-pointer",
+          "hover:border-foreground/40 transition-colors cursor-pointer text-left",
           open && "ring-1 ring-ring border-ring",
           className
         )}
@@ -221,7 +221,7 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
         ref={mergedRef}
         data-slot="select-content"
         className={cn(
-          "absolute left-0 top-full mt-1.5 z-50 w-full min-w-[8rem] max-h-60 overflow-y-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md",
+          "absolute left-0 top-full mt-1.5 z-50 w-full min-w-[8rem] max-h-60 overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg",
           "animate-in fade-in-80 zoom-in-95 duration-100",
           className
         )}
@@ -230,7 +230,10 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
         }}
         {...props}
       >
-        <div className="p-1">{children}</div>
+        <div className="p-1 space-y-0.5">{children}</div>
+        <div className="flex items-center justify-center py-1 text-muted-foreground">
+          <ChevronDown className="size-3.5 opacity-60" />
+        </div>
       </div>
     );
   }
@@ -240,7 +243,7 @@ SelectContent.displayName = "SelectContent";
 const SelectLabel: React.FC<React.ComponentProps<"div">> = ({ className, ...props }) => (
   <div
     data-slot="select-label"
-    className={cn("px-2 py-1.5 text-[11px] font-semibold text-muted-foreground tracking-wider uppercase", className)}
+    className={cn("px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground tracking-wider uppercase", className)}
     {...props}
   />
 );
@@ -276,18 +279,20 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
           onValueChange?.(itemValue);
         }}
         className={cn(
-          "relative flex w-full items-center justify-between rounded-sm px-2.5 py-2 text-xs outline-none select-none transition-colors cursor-pointer",
+          "relative flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs outline-none select-none transition-colors cursor-pointer",
           "hover:bg-accent hover:text-accent-foreground",
-          isSelected ? "bg-accent/60 font-medium text-foreground" : "text-foreground font-normal",
+          isSelected ? "bg-accent/70 font-medium text-foreground" : "text-foreground font-normal",
           className
         )}
         {...props}
       >
         <span className="truncate pr-2">{children}</span>
-        {isSelected && (
-          <span className="flex size-3.5 shrink-0 items-center justify-center text-foreground">
+        {isSelected ? (
+          <span className="flex size-4 shrink-0 items-center justify-center text-foreground">
             <Check className="size-3.5 stroke-[2.5]" />
           </span>
+        ) : (
+          <span className="size-4 shrink-0" />
         )}
       </div>
     );

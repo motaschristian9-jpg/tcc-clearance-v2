@@ -40,3 +40,4 @@ export interface ScannedStudentPayload {
   timestamp: number;
   deviceKeyValid: boolean;
 }
+

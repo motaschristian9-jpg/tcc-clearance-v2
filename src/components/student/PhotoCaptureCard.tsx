@@ -166,7 +166,7 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
                 <Button
                   type="button"
                   onClick={handleCapturePhoto}
-                  className="flex-1 h-10 text-xs font-medium gap-1.5"
+                  className="flex-1 h-10 text-xs font-medium gap-1.5 cursor-pointer"
                 >
                   <Camera className="size-3.5" />
                   <span>Take Photo</span>
@@ -175,7 +175,7 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
                   type="button"
                   variant="outline"
                   onClick={handleSimulatePhoto}
-                  className="h-10 text-xs font-medium px-3"
+                  className="h-10 text-xs font-medium px-3 cursor-pointer"
                   title="Simulate sample ID photo"
                 >
                   Simulate
@@ -186,7 +186,7 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
                 type="button"
                 variant="outline"
                 onClick={onRetake}
-                className="w-full h-10 text-xs font-medium gap-1.5"
+                className="w-full h-10 text-xs font-medium gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="size-3.5" />
                 <span>Retake Photo</span>
@@ -200,15 +200,15 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
             type="button"
             disabled={!photoDataUrl}
             onClick={onNext}
-            className="w-full h-10 text-xs font-medium"
+            className="w-full h-10 text-xs font-medium cursor-pointer"
           >
-            Complete & Open Student Pass
+            Complete Registration
           </Button>
           <Button
             type="button"
             variant="ghost"
             onClick={onBack}
-            className="w-full h-8 text-xs text-muted-foreground hover:text-foreground"
+            className="w-full h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
           >
             Back
           </Button>
@@ -217,4 +217,3 @@ export const PhotoCaptureCard: React.FC<PhotoCaptureCardProps> = ({
     </main>
   );
 };
-
