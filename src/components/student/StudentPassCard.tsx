@@ -8,7 +8,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QrCode, FileText, ShieldCheck, LogOut } from 'lucide-react';
+import { QrCode, FileText, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 interface StudentPassCardProps {
   fullName: string;
@@ -17,7 +17,7 @@ interface StudentPassCardProps {
   section: string;
   passCountdown: number;
   onViewActivityCard: () => void;
-  onSignOut: () => void;
+  onBackToDashboard: () => void;
 }
 
 export const StudentPassCard: React.FC<StudentPassCardProps> = ({
@@ -27,23 +27,31 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
   section,
   passCountdown,
   onViewActivityCard,
-  onSignOut,
+  onBackToDashboard,
 }) => {
   return (
     <main className="w-full max-w-sm mx-auto my-auto py-6">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-center pb-4">
           <div className="flex items-center justify-between pb-1">
-            <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
-              TCC Active Pass
-            </span>
+            <button
+              type="button"
+              onClick={onBackToDashboard}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Dashboard</span>
+            </button>
             <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-600 font-medium">
               <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-              Live
+              Live QR
             </span>
           </div>
 
-          <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+          <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground block pt-1">
+            Attendance Check-In Pass
+          </span>
+          <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
             {fullName}
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground font-mono">
@@ -78,65 +86,53 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
                 <rect x="56" y="28" width="6" height="8" fill="black" />
 
                 <rect x="12" y="38" width="8" height="12" fill="black" />
-                <rect x="24" y="44" width="12" height="6" fill="black" />
-                <rect x="42" y="42" width="16" height="16" fill="black" />
-                <rect x="46" y="46" width="8" height="8" fill="white" />
-                <rect x="64" y="40" width="10" height="8" fill="black" />
-                <rect x="78" y="44" width="14" height="6" fill="black" />
+                <rect x="24" y="42" width="6" height="6" fill="black" />
+                <rect x="38" y="40" width="24" height="20" fill="black" />
+                <rect x="68" y="38" width="10" height="14" fill="black" />
+                <rect x="82" y="44" width="8" height="10" fill="black" />
 
-                <rect x="38" y="64" width="8" height="10" fill="black" />
-                <rect x="50" y="68" width="12" height="6" fill="black" />
-                <rect x="68" y="64" width="8" height="14" fill="black" />
-                <rect x="80" y="72" width="12" height="8" fill="black" />
-                <rect x="42" y="82" width="20" height="8" fill="black" />
-                <rect x="68" y="84" width="8" height="8" fill="black" />
+                <rect x="38" y="66" width="10" height="10" fill="black" />
+                <rect x="54" y="68" width="8" height="8" fill="black" />
+                <rect x="46" y="80" width="18" height="12" fill="black" />
+                <rect x="70" y="76" width="16" height="10" fill="black" />
+
+                {/* Center logo badge */}
+                <rect x="44" y="44" width="12" height="12" fill="white" />
+                <text
+                  x="50"
+                  y="52"
+                  fontSize="6"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                  fill="black"
+                  fontFamily="sans-serif"
+                >
+                  TCC
+                </text>
               </svg>
 
-              {/* Center watermark logo badge */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="size-9 rounded-md bg-white border border-border shadow-sm flex items-center justify-center font-bold text-[10px] text-foreground tracking-wider">
-                  TCC
-                </div>
-              </div>
+              {/* Holographic Watermark Scan Animation */}
+              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-foreground/30 to-transparent animate-bounce opacity-60" />
             </div>
 
-            {/* Countdown indicator */}
-            <div className="w-full pt-2 flex items-center justify-between text-[11px] font-mono text-muted-foreground border-t border-border/60 mt-2">
-              <span className="flex items-center gap-1.5">
-                <QrCode className="size-3.5 text-foreground" />
-                <span>ECDSA Signed</span>
+            {/* Countdown Progress */}
+            <div className="w-full pt-3 flex items-center justify-between text-[11px] font-mono text-muted-foreground border-t border-border/60">
+              <span className="flex items-center gap-1">
+                <QrCode className="size-3" />
+                ECDSA Signed Pass
               </span>
               <span className="font-semibold text-foreground">
                 Refreshes in {passCountdown}s
               </span>
             </div>
-            {/* Progress bar */}
-            <div className="w-full h-1 bg-muted rounded-full overflow-hidden mt-1.5">
-              <div
-                className="h-full bg-foreground transition-all duration-1000 ease-linear"
-                style={{ width: `${(passCountdown / 30) * 100}%` }}
-              />
-            </div>
           </div>
 
-          {/* Security Device Binding Info */}
-          <div className="border border-border rounded-lg p-3 bg-muted/20 text-xs w-full flex items-center gap-2.5">
-            <ShieldCheck className="size-4 text-emerald-600 shrink-0" />
-            <div className="flex flex-col text-left">
-              <span className="font-semibold text-foreground text-[11px]">
-                Bound to this Device
-              </span>
-              <span className="text-[10px] text-muted-foreground leading-normal font-mono">
-                Hardware WebCrypto Key: P-256 Validated
-              </span>
-            </div>
-          </div>
-
-          {/* SBO Scanner Approval Notice */}
-          <div className="border border-border rounded-lg p-2.5 bg-muted/10 text-xs w-full flex items-center justify-between text-left">
+          {/* Cryptographic Device Binding Badge */}
+          <div className="w-full p-2.5 rounded-lg border border-border bg-muted/30 flex items-center justify-between text-left">
             <div className="flex flex-col">
-              <span className="font-semibold text-foreground text-[11px]">
-                Clearance Verification
+              <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
+                <ShieldCheck className="size-3.5 text-foreground" />
+                Authorized Device Bound
               </span>
               <span className="text-[10px] text-muted-foreground">
                 Approved when SBO officer scans your Time In/Out
@@ -152,7 +148,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
           <Button
             type="button"
             onClick={onViewActivityCard}
-            className="w-full h-10 text-xs font-medium gap-2"
+            className="w-full h-10 text-xs font-medium gap-2 cursor-pointer"
           >
             <FileText className="size-3.5" />
             <span>View Clearance Activity Card</span>
@@ -160,16 +156,14 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
 
           <Button
             type="button"
-            variant="ghost"
-            onClick={onSignOut}
-            className="w-full h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+            variant="outline"
+            onClick={onBackToDashboard}
+            className="w-full h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
           >
-            <LogOut className="size-3.5" />
-            <span>Sign Out</span>
+            Back to Dashboard
           </Button>
         </CardFooter>
       </Card>
     </main>
   );
 };
-

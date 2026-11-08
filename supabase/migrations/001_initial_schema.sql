@@ -144,3 +144,4 @@ create policy "Students insert own devices" on public.student_devices
   for insert with check (
     student_id in (select id from public.students where profile_id = auth.uid())
   );
+

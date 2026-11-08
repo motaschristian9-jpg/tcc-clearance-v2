@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { StudentScreen } from '@/types/student';
+import { DayAttendance } from '@/types/attendance';
 import { SignInCard } from '@/components/student/SignInCard';
 import { OtpVerificationCard } from '@/components/student/OtpVerificationCard';
 import { ConsentCard } from '@/components/student/ConsentCard';
 import { StudentDetailsCard } from '@/components/student/StudentDetailsCard';
 import { PhotoCaptureCard } from '@/components/student/PhotoCaptureCard';
-import { RegisteredStudentCard } from '@/components/student/RegisteredStudentCard';
+import { StudentDashboard } from '@/components/student/StudentDashboard';
+import { StudentPassCard } from '@/components/student/StudentPassCard';
+import { ClearanceMatrixCard } from '@/components/student/ClearanceMatrixCard';
 import {
   getSupabase,
   signOutUser,
@@ -30,6 +33,45 @@ export const App: React.FC = () => {
   const [yearLevel, setYearLevel] = useState<string>('3');
   const [section, setSection] = useState<string>('');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+
+  // Dynamic Pass countdown (30s window - AC6)
+  const [passCountdown, setPassCountdown] = useState<number>(30);
+
+  useEffect(() => {
+    if (currentScreen === 'pass') {
+      const interval = setInterval(() => {
+        setPassCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentScreen]);
+
+  // Intramurals Attendance Records for Clearance Card Matrix
+  const [attendanceRecords] = useState<DayAttendance[]>([
+    {
+      day: 'Day 1',
+      date: 'Nov 10',
+      slots: {
+        'morning-in': '07:54 AM',
+        'morning-out': '11:45 AM',
+        'afternoon-in': '01:10 PM',
+        'afternoon-out': '05:02 PM',
+      },
+      cleared: true,
+    },
+    {
+      day: 'Day 2',
+      date: 'Nov 11',
+      slots: {
+        'morning-in': '08:02 AM',
+        'morning-out': '11:50 AM',
+      },
+      cleared: false,
+    },
+    { day: 'Day 3', date: 'Nov 12', slots: {}, cleared: false },
+    { day: 'Day 4', date: 'Nov 13', slots: {}, cleared: false },
+    { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
+  ]);
 
   // Listen to Supabase Authentication & Session
   useEffect(() => {
@@ -82,7 +124,7 @@ export const App: React.FC = () => {
         // Different / new device detected -> require OTP authorization
         setCurrentScreen('otp');
       } else {
-        setCurrentScreen('registered');
+        setCurrentScreen('dashboard');
       }
     } else {
       // First-time Google user -> proceed to Onboarding Step 1 (Consent)
@@ -101,7 +143,7 @@ export const App: React.FC = () => {
     if (studentDbId) {
       await rebindStudentDevice(studentDbId);
     }
-    setCurrentScreen('registered');
+    setCurrentScreen('dashboard');
   };
 
   const handleSignOut = async () => {
@@ -143,7 +185,7 @@ export const App: React.FC = () => {
         setStudentDbId(saved.id);
       }
     }
-    setCurrentScreen('registered');
+    setCurrentScreen('dashboard');
   };
 
   return (
@@ -163,10 +205,12 @@ export const App: React.FC = () => {
         </span>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content Viewport */}
       <div className="flex-1 flex flex-col justify-center">
+        {/* Sign In Screen */}
         {currentScreen === 'signin' && <SignInCard />}
 
+        {/* Device Transfer OTP Screen */}
         {currentScreen === 'otp' && (
           <OtpVerificationCard
             userEmail={authUser?.email || 'your Google account'}
@@ -175,6 +219,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* Onboarding Step 1: Privacy Consent */}
         {currentScreen === 'consent' && (
           <ConsentCard
             onAgree={() => setCurrentScreen('details')}
@@ -182,6 +227,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* Onboarding Step 2: Student Details Form */}
         {currentScreen === 'details' && (
           <StudentDetailsCard
             fullName={fullName}
@@ -199,6 +245,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* Onboarding Step 3: Face Photo Capture */}
         {currentScreen === 'photo' && (
           <PhotoCaptureCard
             photoDataUrl={photoDataUrl}
@@ -209,15 +256,42 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentScreen === 'registered' && (
-          <RegisteredStudentCard
-            userEmail={authUser?.email || 'student@tcc.edu.ph'}
-            fullName={fullName}
-            schoolId={schoolId}
-            department={department}
-            section={section}
+        {/* Student Dashboard: Activities, Clearance Cards & QR Generator */}
+        {currentScreen === 'dashboard' && (
+          <StudentDashboard
+            fullName={fullName || 'Alexander M. Cruz'}
+            schoolId={schoolId || '20241373'}
+            department={department || 'CIT'}
+            section={section || '3A'}
             photoDataUrl={photoDataUrl}
+            userEmail={authUser?.email || 'student@tcc.edu.ph'}
+            onOpenQrPass={() => setCurrentScreen('pass')}
+            onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
             onSignOut={handleSignOut}
+          />
+        )}
+
+        {/* Dynamic Rotating QR Pass Modal/Screen */}
+        {currentScreen === 'pass' && (
+          <StudentPassCard
+            fullName={fullName || 'Alexander M. Cruz'}
+            schoolId={schoolId || '20241373'}
+            department={department || 'CIT'}
+            section={section || '3A'}
+            passCountdown={passCountdown}
+            onViewActivityCard={() => setCurrentScreen('activity-card')}
+            onBackToDashboard={() => setCurrentScreen('dashboard')}
+          />
+        )}
+
+        {/* 5-Day Event Clearance Matrix Card */}
+        {currentScreen === 'activity-card' && (
+          <ClearanceMatrixCard
+            fullName={fullName || 'Alexander M. Cruz'}
+            schoolId={schoolId || '20241373'}
+            section={section || '3A'}
+            attendanceRecords={attendanceRecords}
+            onBack={() => setCurrentScreen('dashboard')}
           />
         )}
       </div>

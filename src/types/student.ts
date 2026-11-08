@@ -4,7 +4,9 @@ export type StudentScreen =
   | 'consent'
   | 'details'
   | 'photo'
-  | 'registered';
+  | 'dashboard'
+  | 'pass'
+  | 'activity-card';
 
 export type LoginScenario = 'new' | 'same-device' | 'new-device';
 

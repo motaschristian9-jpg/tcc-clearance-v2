@@ -16,7 +16,7 @@ interface ClearanceMatrixCardProps {
   schoolId: string;
   section: string;
   attendanceRecords: DayAttendance[];
-  onBackToPass: () => void;
+  onBack: () => void;
 }
 
 export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
@@ -24,7 +24,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
   schoolId,
   section,
   attendanceRecords,
-  onBackToPass,
+  onBack,
 }) => {
   const totalSlots = attendanceRecords.length * 4;
   const clearedSlotsCount = attendanceRecords.reduce((acc, curr) => {
@@ -43,11 +43,11 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
           <div className="flex items-center justify-between pb-1">
             <button
               type="button"
-              onClick={onBackToPass}
+              onClick={onBack}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <ArrowLeft className="size-3.5" />
-              <span>Pass</span>
+              <span>Dashboard</span>
             </button>
             <span className="text-[11px] font-mono text-muted-foreground">
               {clearedSlotsCount}/{totalSlots} Cleared
@@ -145,10 +145,10 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
           <Button
             type="button"
             variant="ghost"
-            onClick={onBackToPass}
+            onClick={onBack}
             className="w-full h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
           >
-            Back to QR Pass
+            Back to Dashboard
           </Button>
         </CardFooter>
       </Card>
