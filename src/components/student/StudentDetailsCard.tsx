@@ -18,6 +18,14 @@ import {
   FieldSet,
   FieldLegend,
 } from '@/components/ui/field';
+import {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { TCC_DEPARTMENTS } from '@/types/student';
 
 interface StudentDetailsCardProps {
@@ -202,45 +210,49 @@ export const StudentDetailsCard: React.FC<StudentDetailsCardProps> = ({
                   )}
                 </Field>
 
-                {/* Department Selection Field using shadcn Field component */}
+                {/* Department Selection Field using shadcn Select component */}
                 <Field>
                   <FieldLabel htmlFor="department">
                     College / Department *
                   </FieldLabel>
-                  <select
-                    id="department"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground font-sans cursor-pointer"
-                  >
-                    {TCC_DEPARTMENTS.map((dept) => (
-                      <option key={dept.code} value={dept.code}>
-                        {dept.code} · {dept.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={department} onValueChange={setDepartment}>
+                    <SelectTrigger id="department" className="h-10 text-xs">
+                      <SelectValue placeholder="Select college / department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {TCC_DEPARTMENTS.map((dept) => (
+                          <SelectItem key={dept.code} value={dept.code}>
+                            {dept.code} · {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <FieldDescription>
                     Select your college program at TCC.
                   </FieldDescription>
                 </Field>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Year Level Field using shadcn Field component */}
+                  {/* Year Level Field using shadcn Select component */}
                   <Field>
                     <FieldLabel htmlFor="yearlevel">
                       Year Level *
                     </FieldLabel>
-                    <select
-                      id="yearlevel"
-                      value={yearLevel}
-                      onChange={(e) => setYearLevel(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground font-sans cursor-pointer"
-                    >
-                      <option value="1">1st Year</option>
-                      <option value="2">2nd Year</option>
-                      <option value="3">3rd Year</option>
-                      <option value="4">4th Year</option>
-                    </select>
+                    <Select value={yearLevel} onValueChange={setYearLevel}>
+                      <SelectTrigger id="yearlevel" className="h-10 text-xs">
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="1">1st Year</SelectItem>
+                          <SelectItem value="2">2nd Year</SelectItem>
+                          <SelectItem value="3">3rd Year</SelectItem>
+                          <SelectItem value="4">4th Year</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </Field>
 
                   {/* Section Field using shadcn Field component */}
