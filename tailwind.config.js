@@ -49,13 +49,18 @@ export default {
       },
       fontFamily: {
         sans: [
+          "Geist",
+          "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
           '"Segoe UI"',
           "Roboto",
-          "Helvetica",
-          "Arial",
           "sans-serif",
+        ],
+        mono: [
+          '"Geist Mono"',
+          "ui-monospace",
+          "monospace",
         ],
       },
     },
