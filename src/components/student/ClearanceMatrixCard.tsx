@@ -35,7 +35,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
     return acc + count;
   }, 0);
 
-  const percent = Math.round((clearedSlotsCount / totalSlots) * 100);
+  const percent = totalSlots > 0 ? Math.round((clearedSlotsCount / totalSlots) * 100) : 0;
 
   return (
     <div className="w-full space-y-6">
@@ -120,7 +120,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
                     </span>
                   ) : (
                     <span className="text-[10px] text-muted-foreground font-medium">
-                      Incomplete
+                      {slotsFilled === 0 ? 'Not Started' : 'In Progress'}
                     </span>
                   )}
                 </div>
@@ -139,7 +139,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
                         {item.slots['morning-in']}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
                     )}
                   </div>
                 </div>
@@ -154,7 +154,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
                         {item.slots['morning-out']}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
                     )}
                   </div>
                 </div>
@@ -169,7 +169,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
                         {item.slots['afternoon-in']}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
                     )}
                   </div>
                 </div>
@@ -184,46 +184,51 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
                         {item.slots['afternoon-out']}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">—</span>
+                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
                     )}
                   </div>
                 </div>
               </CardContent>
 
-              <CardFooter className="p-3 pt-0 text-[10px] text-muted-foreground border-t border-border/40 mt-auto">
-                <span className="truncate">Gate: Main Grandstand</span>
+              <CardFooter className="p-3 pt-0 text-[10px] text-muted-foreground border-t border-border/40 mt-auto flex items-center justify-between">
+                <span>Gate Scan</span>
+                <span className="font-mono">{item.date}, 2026</span>
               </CardFooter>
             </Card>
           );
         })}
       </div>
 
-      {/* Official SBO & Dean Signature Verification Strip */}
+      {/* Official Sign-off & Verification Status */}
       <Card className="border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <ShieldCheck className="size-4 text-emerald-600" />
               <h3 className="text-sm font-semibold text-foreground">
-                Official Department Verification
+                Department Clearance Verification
               </h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Every slot is cryptographically signed with the SBO scanner's ECDSA private key. Digital signatures are permanently locked to your college profile.
+              Each slot is verified and stamped when an SBO officer scans your pass at the gate. Complete all required slots to obtain semester clearance.
             </p>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground shrink-0">
-            <div className="p-3 rounded-lg border border-dashed border-border text-center min-w-[140px]">
-              <span className="text-[10px] block uppercase text-muted-foreground">SBO Officer In-Charge</span>
-              <span className="font-bold text-foreground font-sans">Engr. R. Santos</span>
-              <span className="text-[9px] block text-emerald-600 font-sans">Digitally Signed</span>
+            <div className="p-3 rounded-lg border border-border bg-muted/20 text-center min-w-[140px]">
+              <span className="text-[10px] block uppercase text-muted-foreground">SBO Gate Sign-off</span>
+              <span className="font-semibold text-foreground font-sans">
+                {clearedSlotsCount > 0 ? `${clearedSlotsCount} Stamped` : 'Pending Scans'}
+              </span>
+              <span className="text-[9px] block text-muted-foreground font-sans">Event Attendance</span>
             </div>
 
-            <div className="p-3 rounded-lg border border-dashed border-border text-center min-w-[140px]">
-              <span className="text-[10px] block uppercase text-muted-foreground">CIT Dean Approval</span>
-              <span className="font-bold text-foreground font-sans">Dr. M. De La Cruz</span>
-              <span className="text-[9px] block text-muted-foreground font-sans">Pending Final Sign</span>
+            <div className="p-3 rounded-lg border border-border bg-muted/20 text-center min-w-[140px]">
+              <span className="text-[10px] block uppercase text-muted-foreground">Dean Approval</span>
+              <span className="font-semibold text-foreground font-sans">
+                {clearedSlotsCount >= totalSlots && totalSlots > 0 ? 'Approved' : 'Pending Completion'}
+              </span>
+              <span className="text-[9px] block text-muted-foreground font-sans">Final Clearance</span>
             </div>
           </div>
         </div>

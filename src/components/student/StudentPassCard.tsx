@@ -117,9 +117,9 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
 
             {/* Countdown Progress */}
             <div className="w-full pt-3 flex items-center justify-between text-[11px] font-mono text-muted-foreground border-t border-border/60">
-              <span className="flex items-center gap-1">
-                <QrCode className="size-3" />
-                ECDSA Signed Pass
+              <span className="flex items-center gap-1 font-sans">
+                <QrCode className="size-3 text-foreground" />
+                Official Student Pass
               </span>
               <span className="font-semibold text-foreground">
                 Refreshes in {passCountdown}s
@@ -127,15 +127,15 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
             </div>
           </div>
 
-          {/* Cryptographic Device Binding Badge */}
+          {/* Device Verification Badge */}
           <div className="w-full p-2.5 rounded-lg border border-border bg-muted/30 flex items-center justify-between text-left">
             <div className="flex flex-col">
               <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
                 <ShieldCheck className="size-3.5 text-foreground" />
-                Authorized Device Bound
+                Verified Device
               </span>
               <span className="text-[10px] text-muted-foreground">
-                Approved when SBO officer scans your Time In/Out
+                Present this to the SBO officer at the gate
               </span>
             </div>
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
@@ -151,7 +151,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
             className="w-full h-10 text-xs font-medium gap-2 cursor-pointer"
           >
             <FileText className="size-3.5" />
-            <span>View Clearance Activity Card</span>
+            <span>View My Clearance Card</span>
           </Button>
 
           <Button

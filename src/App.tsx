@@ -50,26 +50,8 @@ export const App: React.FC = () => {
 
   // Intramurals Attendance Records for Clearance Card Matrix
   const [attendanceRecords] = useState<DayAttendance[]>([
-    {
-      day: 'Day 1',
-      date: 'Nov 10',
-      slots: {
-        'morning-in': '07:54 AM',
-        'morning-out': '11:45 AM',
-        'afternoon-in': '01:10 PM',
-        'afternoon-out': '05:02 PM',
-      },
-      cleared: true,
-    },
-    {
-      day: 'Day 2',
-      date: 'Nov 11',
-      slots: {
-        'morning-in': '08:02 AM',
-        'morning-out': '11:50 AM',
-      },
-      cleared: false,
-    },
+    { day: 'Day 1', date: 'Nov 10', slots: {}, cleared: false },
+    { day: 'Day 2', date: 'Nov 11', slots: {}, cleared: false },
     { day: 'Day 3', date: 'Nov 12', slots: {}, cleared: false },
     { day: 'Day 4', date: 'Nov 13', slots: {}, cleared: false },
     { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
@@ -305,6 +287,7 @@ export const App: React.FC = () => {
             section={section || '3A'}
             photoDataUrl={photoDataUrl}
             userEmail={authUser?.email || 'student@tcc.edu.ph'}
+            attendanceRecords={attendanceRecords}
             onOpenQrPass={() => setCurrentScreen('pass')}
             onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
             onSignOut={handleSignOut}

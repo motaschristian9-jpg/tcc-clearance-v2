@@ -24,6 +24,7 @@ import {
   Layers,
   FileCheck2,
 } from 'lucide-react';
+import { DayAttendance } from '@/types/attendance';
 
 export interface ClearanceActivity {
   id: string;
@@ -44,6 +45,7 @@ interface StudentDashboardProps {
   section: string;
   photoDataUrl: string | null;
   userEmail: string;
+  attendanceRecords: DayAttendance[];
   onOpenQrPass: () => void;
   onViewActivityCard: (activityId: string) => void;
   onSignOut: () => void;
@@ -56,27 +58,47 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   section,
   photoDataUrl,
   userEmail,
+  attendanceRecords,
   onOpenQrPass,
   onViewActivityCard,
 }) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'ongoing' | 'upcoming'>('all');
 
+  // Real calculation of Intramurals cleared slots directly from attendanceRecords
+  const intramuralsCleared = attendanceRecords.reduce((acc, curr) => {
+    let count = 0;
+    if (curr.slots['morning-in']) count++;
+    if (curr.slots['morning-out']) count++;
+    if (curr.slots['afternoon-in']) count++;
+    if (curr.slots['afternoon-out']) count++;
+    return acc + count;
+  }, 0);
+
+  // Extract any actual recorded stamps
+  const recentStamps: { day: string; slotLabel: string; time: string; date: string }[] = [];
+  attendanceRecords.forEach((rec) => {
+    if (rec.slots['afternoon-out']) recentStamps.push({ day: rec.day, slotLabel: 'Afternoon Out', time: rec.slots['afternoon-out'], date: rec.date });
+    if (rec.slots['afternoon-in']) recentStamps.push({ day: rec.day, slotLabel: 'Afternoon In', time: rec.slots['afternoon-in'], date: rec.date });
+    if (rec.slots['morning-out']) recentStamps.push({ day: rec.day, slotLabel: 'Morning Out', time: rec.slots['morning-out'], date: rec.date });
+    if (rec.slots['morning-in']) recentStamps.push({ day: rec.day, slotLabel: 'Morning In', time: rec.slots['morning-in'], date: rec.date });
+  });
+
   const [activities, setActivities] = useState<ClearanceActivity[]>([
     {
       id: 'cit-intramurals-2026',
       title: `${department} Intramurals 2026`,
-      category: 'Major College Event',
+      category: '5-Day College Event',
       dateRange: 'Nov 10 – Nov 14, 2026',
       venue: 'TCC Gymnasium & Sports Complex',
       totalSlots: 20,
-      clearedSlots: 6,
+      clearedSlots: intramuralsCleared,
       status: 'ongoing',
       isDownloadedOffline: true,
     },
     {
       id: 'cit-general-assembly',
-      title: `${department} General Assembly & Symposium`,
+      title: `${department} General Assembly`,
       category: 'Department Assembly',
       dateRange: 'Dec 05, 2026 · 08:00 AM',
       venue: 'TCC Audio-Visual Room (AVR)',
@@ -88,7 +110,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     {
       id: 'academic-clearance-2026',
       title: '2nd Sem Academic Clearance 2025-2026',
-      category: 'Institutional Clearance',
+      category: 'Semester Clearance',
       dateRange: 'March 18 – March 22, 2026',
       venue: 'Registrar & Department Offices',
       totalSlots: 4,
@@ -114,9 +136,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     return act.status === filter;
   });
 
-  const overallCleared = activities.reduce((acc, a) => acc + a.clearedSlots, 0);
+  const overallCleared = intramuralsCleared;
   const overallTotal = activities.reduce((acc, a) => acc + a.totalSlots, 0);
-  const overallPercent = Math.round((overallCleared / overallTotal) * 100);
+  const overallPercent = overallTotal > 0 ? Math.round((overallCleared / overallTotal) * 100) : 0;
 
   return (
     <div className="w-full space-y-6">
@@ -181,10 +203,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
 
             <div className="p-3 rounded-lg bg-muted/30 border border-border/60 col-span-2 sm:col-span-1">
-              <span className="text-[11px] text-muted-foreground block">Device Binding</span>
+              <span className="text-[11px] text-muted-foreground block">Device Status</span>
               <div className="flex items-center gap-1.5 mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="size-4 shrink-0" />
-                <span>ECDSA Bound</span>
+                <span>Device Linked</span>
               </div>
             </div>
           </div>
@@ -200,10 +222,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-                    Upcoming Activity & Clearance Cards
+                    Clearance Activities
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground">
-                    Official event cards requiring attendance stamps for semester clearance.
+                    Required events and attendance cards for semester clearance.
                   </CardDescription>
                 </div>
 
@@ -250,9 +272,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               {/* Responsive Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredActivities.map((activity) => {
-                  const percent = Math.round(
-                    (activity.clearedSlots / activity.totalSlots) * 100
-                  );
+                  const currentCleared =
+                    activity.id === 'cit-intramurals-2026' ? intramuralsCleared : activity.clearedSlots;
+                  const percent =
+                    activity.totalSlots > 0
+                      ? Math.round((currentCleared / activity.totalSlots) * 100)
+                      : 0;
 
                   return (
                     <div
@@ -316,10 +341,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           <div className="flex items-center justify-between text-xs mb-1.5">
                             <span className="text-muted-foreground flex items-center gap-1">
                               <Clock className="size-3 text-muted-foreground" />
-                              Clearance Slots
+                              Required Stamps
                             </span>
                             <span className="font-medium text-foreground font-mono">
-                              {activity.clearedSlots}/{activity.totalSlots} Signed ({percent}%)
+                              {currentCleared}/{activity.totalSlots} Slots ({percent}%)
                             </span>
                           </div>
                           <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
@@ -348,59 +373,45 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </CardContent>
           </Card>
 
-          {/* Recent Stamping Activity Log */}
+          {/* Recent Attendance Stamps Record */}
           <Card className="border border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
                 <FileCheck2 className="size-4" />
-                <span>Recent Attendance Stamp Records</span>
+                <span>Attendance Stamp History</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Official time in and time out stamps recorded by SBO gate scanners.
+                Time In and Time Out stamps recorded by SBO gate officers.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="divide-y divide-border/60 text-xs">
-                <div className="py-2.5 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="font-medium text-foreground block">
-                      Day 2 · Morning In (Gym Gate 1)
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Nov 11, 2026 · SBO Officer Scanner #3
-                    </span>
-                  </div>
-                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted">
-                    08:02 AM
-                  </span>
+              {recentStamps.length > 0 ? (
+                <div className="divide-y divide-border/60 text-xs">
+                  {recentStamps.map((stamp, idx) => (
+                    <div key={idx} className="py-2.5 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <span className="font-medium text-foreground block">
+                          {stamp.day} · {stamp.slotLabel}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {stamp.date}, 2026 · Gate Scanner
+                        </span>
+                      </div>
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-emerald-600 dark:text-emerald-400">
+                        {stamp.time}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div className="py-2.5 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="font-medium text-foreground block">
-                      Day 1 · Afternoon Out (Grandstand Gate)
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Nov 10, 2026 · SBO Auditor
-                    </span>
-                  </div>
-                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted">
-                    05:02 PM
-                  </span>
+              ) : (
+                <div className="py-8 text-center text-xs text-muted-foreground space-y-1">
+                  <Clock className="size-5 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="font-medium text-foreground">No attendance stamps yet</p>
+                  <p className="text-[11px] max-w-sm mx-auto">
+                    When an SBO officer scans your pass at an event gate, your Time In and Time Out will appear here.
+                  </p>
                 </div>
-                <div className="py-2.5 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="font-medium text-foreground block">
-                      Day 1 · Afternoon In (Grandstand Gate)
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Nov 10, 2026 · SBO Auditor
-                    </span>
-                  </div>
-                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted">
-                    01:10 PM
-                  </span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -413,23 +424,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground">
                   <Sparkles className="size-3.5" />
-                  <span>Check-In Pass</span>
+                  <span>Gate Check-In</span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-600 font-medium">
                   <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Active
+                  Ready
                 </span>
               </div>
               <CardTitle className="text-lg font-semibold tracking-tight text-foreground pt-1">
-                Generate Attendance QR
+                Attendance Pass
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground leading-relaxed">
-                Present your rotating cryptographic QR pass to SBO officers at event entrance and exit gates.
+                Present your pass to SBO officers at the gate for your Time In and Time Out.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* QR Action Button */}
+              {/* QR Action Button - Task-Oriented & Action First */}
               <Button
                 type="button"
                 size="lg"
@@ -437,7 +448,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 className="w-full h-12 text-xs font-semibold gap-2.5 shadow-sm cursor-pointer"
               >
                 <QrCode className="size-4" />
-                <span>Show Active QR Pass</span>
+                <span>Show My QR Pass</span>
               </Button>
 
               <div className="p-3 rounded-lg border border-border bg-card space-y-2 text-xs">
@@ -445,23 +456,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   <span className="flex items-center gap-1">
                     <Wifi className="size-3" /> Offline Mode
                   </span>
-                  <span className="font-medium text-foreground">Supported</span>
+                  <span className="font-medium text-foreground">Works Without Internet</span>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between text-muted-foreground text-[11px]">
                   <span>Pass Refresh Rate</span>
-                  <span className="font-mono font-medium text-foreground">Every 30s</span>
+                  <span className="font-medium text-foreground">Every 30 seconds</span>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                  <span>Security Signature</span>
-                  <span className="font-mono text-emerald-600 font-medium">ECDSA P-256</span>
+                  <span>Security</span>
+                  <span className="text-emerald-600 font-medium">Tamper-proof & Verified</span>
                 </div>
               </div>
             </CardContent>
 
             <CardFooter className="pt-0 text-[11px] text-muted-foreground leading-relaxed">
-              No internet connection required at venue gates. Passes are verified cryptographically offline.
+              No mobile data or Wi-Fi needed at venue gates. Passes work fully offline.
             </CardFooter>
           </Card>
 
@@ -496,15 +507,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </CardContent>
           </Card>
 
-          {/* Security & Anti-Cheating Notice */}
+          {/* Single Device Policy Notice */}
           <Card className="border border-border bg-muted/20 shadow-xs">
             <CardContent className="p-4 space-y-2 text-xs">
               <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
                 <Layers className="size-3.5" />
-                <span>One Account, One Device</span>
+                <span>Single Device Policy</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Your clearance pass is cryptographically bound to this physical phone. Taking screenshots or transferring accounts is automatically flagged by SBO scanners.
+                Your pass is registered to this phone. If you sign in on another phone, an email verification code will be sent to confirm the device transfer.
               </p>
             </CardContent>
           </Card>
