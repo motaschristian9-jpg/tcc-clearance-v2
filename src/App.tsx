@@ -295,10 +295,10 @@ export const App: React.FC = () => {
         {/* Student Dashboard: Takes Advantage of the Whole Screen! */}
         {currentScreen === 'dashboard' && (
           <StudentDashboard
-            fullName={fullName || 'Alexander M. Cruz'}
-            schoolId={schoolId || '20241373'}
+            fullName={fullName || 'Student'}
+            schoolId={schoolId || '---'}
             department={department || 'CIT'}
-            section={section || '3A'}
+            section={section || '---'}
             photoDataUrl={photoDataUrl}
             userEmail={authUser?.email || 'student@tcc.edu.ph'}
             attendanceRecords={attendanceRecords}
@@ -312,10 +312,10 @@ export const App: React.FC = () => {
         {currentScreen === 'pass' && (
           <div className="flex-1 flex items-center justify-center py-4">
             <StudentPassCard
-              fullName={fullName || 'Alexander M. Cruz'}
-              schoolId={schoolId || '20241373'}
+              fullName={fullName || 'Student'}
+              schoolId={schoolId || '---'}
               department={department || 'CIT'}
-              section={section || '3A'}
+              section={section || '---'}
               passCountdown={passCountdown}
               onViewActivityCard={() => setCurrentScreen('activity-card')}
               onBackToDashboard={() => setCurrentScreen('dashboard')}
@@ -326,9 +326,9 @@ export const App: React.FC = () => {
         {/* 5-Day Event Clearance Matrix Card (Full Screen Responsive Matrix) */}
         {currentScreen === 'activity-card' && (
           <ClearanceMatrixCard
-            fullName={fullName || 'Alexander M. Cruz'}
-            schoolId={schoolId || '20241373'}
-            section={section || '3A'}
+            fullName={fullName || 'Student'}
+            schoolId={schoolId || '---'}
+            section={section || '---'}
             attendanceRecords={attendanceRecords}
             onBack={() => setCurrentScreen('dashboard')}
           />

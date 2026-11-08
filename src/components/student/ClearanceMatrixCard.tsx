@@ -11,6 +11,7 @@ import { ArrowLeft, Download, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { DayAttendance } from '@/types/attendance';
 
 interface ClearanceMatrixCardProps {
+  title?: string;
   fullName: string;
   schoolId: string;
   section: string;
@@ -19,6 +20,7 @@ interface ClearanceMatrixCardProps {
 }
 
 export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
+  title = 'Event Clearance Card',
   fullName,
   schoolId,
   section,
@@ -59,7 +61,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
           </div>
 
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground pt-1">
-            CIT Intramurals 2026 Clearance Card
+            {title}
           </h1>
           <p className="text-xs text-muted-foreground font-mono">
             Student: <span className="font-semibold text-foreground font-sans">{fullName}</span> · ID: {schoolId} · Section: {section}
@@ -77,7 +79,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
 
           <Button
             type="button"
-            onClick={() => alert(`Exporting CIT Intramurals Clearance Card PDF for ${fullName}...`)}
+            onClick={() => alert(`Exporting ${title} PDF for ${fullName}...`)}
             className="h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs"
           >
             <Download className="size-3.5" />
