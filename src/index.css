@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-brand-primary: #1e40af;
+    --color-surface-bg: #f8fafc;
+    --color-surface-card: #ffffff;
+    --color-text-main: #0f172a;
+    --color-text-muted: #64748b;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* High contrast sunlight-readable focus indicator */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand-800 ring-offset-2 ring-offset-white;
+  }
+}
+
+/* Utilitarian UI Helpers */
+@layer components {
+  .btn-touch {
+    @apply min-h-[48px] min-w-[48px] inline-flex items-center justify-center font-medium rounded-lg px-4 py-2.5 transition-colors duration-150 active:scale-[0.98] select-none;
+  }
+
+  .saas-card {
+    @apply bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6;
+  }
+  
+  .sunlight-heading {
+    @apply font-bold text-slate-900 tracking-tight;
+  }
+}

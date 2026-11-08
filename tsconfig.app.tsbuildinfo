@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/common/badge.tsx","./src/components/common/button.tsx","./src/components/common/header.tsx","./src/components/common/statusstrip.tsx","./src/lib/utils.ts","./src/types/index.ts"],"version":"5.9.3"}
