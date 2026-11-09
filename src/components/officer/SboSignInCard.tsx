@@ -3,7 +3,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
@@ -238,9 +237,6 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
           <CardTitle className="text-xl font-bold tracking-tight text-foreground">
             SBO Gate Terminal
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Select your department station and authenticate to start duty
-          </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
