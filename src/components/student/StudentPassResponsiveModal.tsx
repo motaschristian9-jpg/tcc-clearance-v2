@@ -42,42 +42,55 @@ export function StudentPassResponsiveModal({
   onViewActivityCard,
 }: StudentPassResponsiveModalProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!open || !canvasRef.current) return;
-
+    // Time-bucketed token refreshing every 30 seconds
     const timeBucket = Math.floor(Date.now() / 30000) * 30000;
     const passPayload = JSON.stringify({
-      tcc_id: schoolId,
-      name: fullName,
-      dept: department,
-      sec: section,
+      tcc_id: schoolId || "---",
+      name: fullName || "Student",
+      dept: department || "CIT",
+      sec: section || "---",
       epoch: timeBucket,
       v: 1,
     });
 
-    QRCode.toCanvas(canvasRef.current, passPayload, {
-      width: 220,
+    QRCode.toDataURL(passPayload, {
+      width: 240,
       margin: 1,
       color: {
         dark: "#0f172a",
         light: "#ffffff",
       },
       errorCorrectionLevel: "M",
-    }).catch((err) => {
-      console.warn("Failed to render pass QR code canvas:", err);
-    });
-  }, [open, schoolId, fullName, department, section, passCountdown]);
+    })
+      .then((url) => {
+        setQrDataUrl(url);
+      })
+      .catch((err) => {
+        console.warn("Failed to generate QR data URL:", err);
+      });
+  }, [schoolId, fullName, department, section, passCountdown]);
 
   const PassBody = (
     <div className="flex flex-col items-center gap-4 py-2">
       {/* Dynamic 30s Real Scannable QR Display */}
       <div className="p-3.5 rounded-2xl border border-border bg-white shadow-sm flex flex-col items-center">
         <div className="size-52 bg-white flex items-center justify-center relative p-1">
-          <canvas ref={canvasRef} className="size-full rounded-sm" />
+          {qrDataUrl ? (
+            <img
+              src={qrDataUrl}
+              alt="Student Pass QR Code"
+              className="size-full rounded-sm object-contain"
+            />
+          ) : (
+            <div className="size-full flex items-center justify-center">
+              <QrCode className="size-16 text-muted-foreground/30 animate-pulse" />
+            </div>
+          )}
           {/* Subtle scanning beam indicator */}
-          <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-50 pointer-events-none" />
+          <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-40 pointer-events-none" />
         </div>
 
         {/* Countdown */}
@@ -142,7 +155,7 @@ export function StudentPassResponsiveModal({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="px-4 pb-6">
+      <DrawerContent className="px-4 pb-6 max-h-[90vh]">
         <DrawerHeader className="text-center sm:text-center pb-1 pt-2">
           <DrawerTitle className="text-lg font-semibold tracking-tight text-foreground">
             {fullName || "Student Pass"}

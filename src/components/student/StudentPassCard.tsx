@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import {
   Card,
@@ -30,33 +30,35 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
   onViewActivityCard,
   onBackToDashboard,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-
     // Time-bucketed token refreshing every 30 seconds
     const timeBucket = Math.floor(Date.now() / 30000) * 30000;
     const passPayload = JSON.stringify({
-      tcc_id: schoolId,
-      name: fullName,
-      dept: department,
-      sec: section,
+      tcc_id: schoolId || '---',
+      name: fullName || 'Student',
+      dept: department || 'CIT',
+      sec: section || '---',
       epoch: timeBucket,
       v: 1,
     });
 
-    QRCode.toCanvas(canvasRef.current, passPayload, {
-      width: 208,
+    QRCode.toDataURL(passPayload, {
+      width: 240,
       margin: 1,
       color: {
         dark: '#0f172a',
         light: '#ffffff',
       },
       errorCorrectionLevel: 'M',
-    }).catch((err) => {
-      console.warn('Failed to render pass QR code canvas:', err);
-    });
+    })
+      .then((url) => {
+        setQrDataUrl(url);
+      })
+      .catch((err) => {
+        console.warn('Failed to render pass QR code data URL:', err);
+      });
   }, [schoolId, fullName, department, section, passCountdown]);
 
   return (
@@ -82,10 +84,10 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
             Attendance Check-In Pass
           </span>
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground mt-0.5">
-            {fullName}
+            {fullName || 'Student'}
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground font-mono">
-            {department} · ID {schoolId} · {section}
+            {department} · ID {schoolId || '---'} · {section || '---'}
           </CardDescription>
         </CardHeader>
 
@@ -93,10 +95,20 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
           {/* Dynamic 30s Real Scannable QR Display */}
           <div className="relative p-4 rounded-xl border border-border bg-white shadow-sm flex flex-col items-center">
             <div className="size-52 bg-white flex items-center justify-center relative p-1">
-              <canvas ref={canvasRef} className="size-full rounded-sm" />
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt="Student Pass QR Code"
+                  className="size-full rounded-sm object-contain"
+                />
+              ) : (
+                <div className="size-full flex items-center justify-center">
+                  <QrCode className="size-16 text-muted-foreground/30 animate-pulse" />
+                </div>
+              )}
 
               {/* Holographic Watermark Scan Animation */}
-              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-60 pointer-events-none" />
+              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-50 pointer-events-none" />
             </div>
 
             {/* Countdown Progress */}
@@ -122,9 +134,6 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
                 Present this to the SBO officer for scanning
               </span>
             </div>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
-              Ready to Scan
-            </span>
           </div>
         </CardContent>
 

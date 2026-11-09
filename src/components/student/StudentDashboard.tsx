@@ -205,6 +205,32 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         </div>
       </div>
 
+      {/* Mobile-Only: Attendance Pass directly below User Card */}
+      <div className="block lg:hidden">
+        <Card className="border border-border bg-card shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+              <ScanLine className="size-4" />
+              <span>Attendance Pass</span>
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Present your QR pass to SBO officers for attendance verification.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              size="lg"
+              onClick={onOpenQrPass}
+              className="w-full h-11 text-xs font-semibold gap-2.5 shadow-sm cursor-pointer"
+            >
+              <QrCode className="size-4" />
+              <span>Show My QR Pass</span>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Main Responsive Grid: 8 Cols (Activities) + 4 Cols (QR Pass & Side Hub) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Upcoming Activities & Clearance Cards */}
@@ -426,31 +452,33 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
         {/* Right Column: Attendance QR Pass Generator & Academic Summary */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Prominent Attendance QR Pass Card */}
-          <Card className="border border-border bg-card shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
-                <ScanLine className="size-4" />
-                <span>Attendance Pass</span>
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Present your QR pass to SBO officers for attendance verification.
-              </CardDescription>
-            </CardHeader>
+          {/* Desktop-Only: Prominent Attendance QR Pass Card */}
+          <div className="hidden lg:block">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+                  <ScanLine className="size-4" />
+                  <span>Attendance Pass</span>
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Present your QR pass to SBO officers for attendance verification.
+                </CardDescription>
+              </CardHeader>
 
-            <CardContent>
-              {/* QR Action Button - Task-Oriented & Action First */}
-              <Button
-                type="button"
-                size="lg"
-                onClick={onOpenQrPass}
-                className="w-full h-11 text-xs font-semibold gap-2.5 shadow-sm cursor-pointer"
-              >
-                <QrCode className="size-4" />
-                <span>Show My QR Pass</span>
-              </Button>
-            </CardContent>
-          </Card>
+              <CardContent>
+                {/* QR Action Button - Task-Oriented & Action First */}
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={onOpenQrPass}
+                  className="w-full h-11 text-xs font-semibold gap-2.5 shadow-sm cursor-pointer"
+                >
+                  <QrCode className="size-4" />
+                  <span>Show My QR Pass</span>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Student Academic Record Card */}
           <Card className="border border-border shadow-sm">
