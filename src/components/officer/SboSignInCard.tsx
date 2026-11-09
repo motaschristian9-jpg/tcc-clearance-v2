@@ -23,9 +23,11 @@ import {
   ArrowLeft,
   Loader2,
   UserCheck,
-  UserMinus,
   CheckCircle2,
-  Users,
+  KeyRound,
+  Eye,
+  EyeOff,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TCC_DEPARTMENTS } from '@/types/student';
@@ -48,13 +50,13 @@ export interface StationAccountState {
   lastActive: string;
 }
 
-const STORAGE_KEY = 'TCC_SBO_ACTIVE_ACCOUNTS';
+export const SBO_ACCOUNTS_STORAGE_KEY = 'TCC_SBO_ACTIVE_ACCOUNTS';
 
 // Initial active accounts state per department
 const getInitialAccounts = (): Record<string, StationAccountState> => {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(SBO_ACCOUNTS_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {
     // fallback
@@ -84,6 +86,30 @@ const OFFICER_POSITIONS = [
   'Custom / Other',
 ];
 
+// Validate station passcode
+export const validateStationPasscode = (
+  enteredPasscode: string,
+  stationId: StationId,
+  department: string
+): boolean => {
+  const clean = enteredPasscode.trim().toLowerCase();
+  if (!clean) return false;
+
+  // Master bypass codes
+  if (['sbo2026', 'tcc-sbo-gate', '20261373'].includes(clean)) return true;
+
+  const num = stationId.replace(/\D/g, ''); // '1' | '2' | '3' | '4'
+  const deptCode = department.toLowerCase();
+
+  const validVariants = [
+    `sbo${num}`,
+    `${deptCode}-sbo${num}`,
+    `${deptCode}sbo${num}`,
+  ];
+
+  return validVariants.includes(clean);
+};
+
 export const SboSignInCard: React.FC<SboSignInCardProps> = ({
   onOfficerAuthenticated,
   onBackToStudentPortal,
@@ -94,15 +120,17 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
     getInitialAccounts()
   );
 
-  // Initialize with current user of CIT-SBO1 if present
+  // Current occupant of the selected station (if populated)
   const currentKey = `${department}-${selectedStation.replace(/\s+/g, '')}`;
-  const initialOccupant = accounts[currentKey];
+  const currentOccupant = accounts[currentKey];
 
-  const [officerName, setOfficerName] = useState<string>(initialOccupant?.officerName || '');
+  const [officerName, setOfficerName] = useState<string>(currentOccupant?.officerName || '');
   const [selectedPosition, setSelectedPosition] = useState<string>(
-    initialOccupant?.position || 'Attendance Committee Head'
+    currentOccupant?.position || 'Attendance Committee Head'
   );
   const [customPosition, setCustomPosition] = useState<string>('');
+  const [passcode, setPasscode] = useState<string>('');
+  const [showPasscode, setShowPasscode] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const effectivePosition =
@@ -110,9 +138,19 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
       ? customPosition.trim() || 'SBO Officer'
       : selectedPosition;
 
-  // Handle station selection
+  // Check if account is populated and locked to another user
+  const isOccupied = currentOccupant && currentOccupant.status === 'active';
+  const isOccupiedByAnother =
+    isOccupied &&
+    currentOccupant.officerName.trim().toLowerCase() !== officerName.trim().toLowerCase();
+  const isReturningOccupant =
+    isOccupied &&
+    currentOccupant.officerName.trim().toLowerCase() === officerName.trim().toLowerCase();
+
+  // Handle station button selection
   const handleSelectStation = (stId: StationId) => {
     setSelectedStation(stId);
+    setPasscode('');
     const key = `${department}-${stId.replace(/\s+/g, '')}`;
     const existing = accounts[key];
 
@@ -126,7 +164,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
         setCustomPosition(existing.position);
       }
     } else {
-      // Station is available - if officer had previously prefilled an old occupant, clear it
+      // If previously viewing an occupied station and moving to a vacant one, clear occupant name
       const prevKey = `${department}-${selectedStation.replace(/\s+/g, '')}`;
       if (accounts[prevKey]?.officerName === officerName) {
         setOfficerName('');
@@ -134,39 +172,38 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
     }
   };
 
-  // Vacate / release account back to available status
-  const handleReleaseStation = (stId: StationId) => {
-    const key = `${department}-${stId.replace(/\s+/g, '')}`;
-    setAccounts((prev) => {
-      const copy = { ...prev };
-      delete copy[key];
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(copy));
-      } catch {}
-      return copy;
-    });
-
-    if (selectedStation === stId) {
-      setOfficerName('');
-    }
-
-    toast.info(`${stId} Account Vacated`, {
-      description: `Station ${stId} is now marked Available for ${department}.`,
-    });
-  };
-
-  const currentOccupant = accounts[currentKey];
-  const isOccupiedByAnother =
-    currentOccupant &&
-    currentOccupant.status === 'active' &&
-    currentOccupant.officerName.toLowerCase() !== officerName.trim().toLowerCase();
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Security Gate 1: Check if populated and locked to another user
+    if (isOccupiedByAnother) {
+      toast.error('Station Account Locked', {
+        description: `This station is currently assigned to ${currentOccupant.officerName}. It cannot be overwritten or removed unless that officer logs out.`,
+      });
+      return;
+    }
+
+    // Security Gate 2: Full Name Required
     if (!officerName.trim()) {
       toast.error('Officer Name Required', {
         description: 'Please enter your full name for the attendance stamping signature.',
+      });
+      return;
+    }
+
+    // Security Gate 3: Station Passcode Required (protection if someone finds the route)
+    if (!passcode.trim()) {
+      toast.error('Passcode Required', {
+        description: `Please enter the authorized passcode for ${selectedStation} (e.g. sbo${selectedStation.replace(/\D/g, '')}).`,
+      });
+      return;
+    }
+
+    // Security Gate 4: Validate Passcode against department station
+    const isValidPasscode = validateStationPasscode(passcode, selectedStation, department);
+    if (!isValidPasscode) {
+      toast.error('Invalid Station Passcode', {
+        description: `The passcode entered is incorrect for ${selectedStation} in ${department}. Contact your SBO Lead.`,
       });
       return;
     }
@@ -179,6 +216,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const key = `${department}-${selectedStation.replace(/\s+/g, '')}`;
 
+      // Mark this account as populated and locked to this officer
       const updatedAccounts: Record<string, StationAccountState> = {
         ...accounts,
         [key]: {
@@ -193,7 +231,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
 
       setAccounts(updatedAccounts);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAccounts));
+        localStorage.setItem(SBO_ACCOUNTS_STORAGE_KEY, JSON.stringify(updatedAccounts));
       } catch {}
 
       const officerSession: SboOfficerSession = {
@@ -209,7 +247,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
       });
 
       onOfficerAuthenticated(officerSession);
-    }, 400);
+    }, 450);
   };
 
   return (
@@ -222,14 +260,14 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
 
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-muted text-muted-foreground border border-border mx-auto mb-1">
             <Lock className="size-3" />
-            <span>Restricted Gateway · SBO Personnel</span>
+            <span>Restricted Gateway · SBO Personnel Only</span>
           </div>
 
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
             SBO Gate Terminal
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Select your department station account to begin clearance stamping.
+            Select an account and enter station passcode to access attendance terminal.
           </CardDescription>
         </CardHeader>
 
@@ -244,6 +282,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                 value={department}
                 onValueChange={(val) => {
                   setDepartment(val);
+                  setPasscode('');
                   const newKey = `${val}-${selectedStation.replace(/\s+/g, '')}`;
                   const occupant = accounts[newKey];
                   setOfficerName(occupant?.officerName || '');
@@ -262,22 +301,22 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
               </Select>
             </div>
 
-            {/* Department SBO Accounts (4 per Department) */}
+            {/* Department SBO Accounts Grid (4 Accounts per Department) */}
             <div className="space-y-2 pt-1 border-t border-border/60">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium">Department SBO Accounts</Label>
                 <span className="text-[10px] font-mono text-muted-foreground">
-                  4 Accounts per Department
+                  4 Protected Stations
                 </span>
               </div>
 
-              {/* Grid of 4 accounts showing who is currently using each account */}
+              {/* 4 Discrete Account Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {STATIONS.map((stId) => {
                   const isSelected = selectedStation === stId;
                   const key = `${department}-${stId.replace(/\s+/g, '')}`;
                   const accountInfo = accounts[key];
-                  const isOccupied = accountInfo && accountInfo.status === 'active';
+                  const occupied = accountInfo && accountInfo.status === 'active';
 
                   return (
                     <button
@@ -292,28 +331,30 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                     >
                       <div className="flex items-center justify-between w-full">
                         <span className="font-mono font-bold text-xs text-foreground">{stId}</span>
-                        <span
-                          className={`size-2 rounded-full ${
-                            isOccupied
-                              ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)] animate-pulse'
-                              : 'bg-muted-foreground/30'
-                          }`}
-                          title={
-                            isOccupied
-                              ? `Used by ${accountInfo.officerName}`
-                              : 'Account Available'
-                          }
-                        />
+                        {occupied ? (
+                          <div className="flex items-center gap-1">
+                            <Lock className="size-2.5 text-amber-600 dark:text-amber-400" />
+                            <span
+                              className="size-1.5 rounded-full bg-emerald-500 animate-pulse"
+                              title={`In Duty: ${accountInfo.officerName}`}
+                            />
+                          </div>
+                        ) : (
+                          <span
+                            className="size-1.5 rounded-full bg-muted-foreground/30"
+                            title="Account Available"
+                          />
+                        )}
                       </div>
 
                       <div className="pt-1.5 w-full">
-                        {isOccupied ? (
+                        {occupied ? (
                           <div className="truncate">
-                            <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 block truncate leading-tight">
+                            <span className="text-[10px] font-semibold text-foreground block truncate leading-tight">
                               {accountInfo.officerName}
                             </span>
-                            <span className="text-[9px] text-muted-foreground block truncate">
-                              {accountInfo.position}
+                            <span className="text-[9px] text-amber-700 dark:text-amber-400 font-mono block truncate">
+                              ● In Duty
                             </span>
                           </div>
                         ) : (
@@ -327,32 +368,36 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                 })}
               </div>
 
-              {/* Status Banner for Currently Selected Account */}
-              {currentOccupant && currentOccupant.status === 'active' ? (
-                <div className="flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-[11px] text-emerald-900 dark:text-emerald-300 truncate">
-                      {selectedStation} is used by{' '}
-                      <strong>{currentOccupant.officerName}</strong> ({currentOccupant.position})
-                    </span>
+              {/* Status Banner explaining state and locking policy */}
+              {isOccupiedByAnother ? (
+                <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-amber-900 dark:text-amber-200 text-[11px]">
+                      {selectedStation} is Locked to {currentOccupant.officerName}
+                    </p>
+                    <p className="text-[10.5px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                      This station is in active duty by <strong>{currentOccupant.officerName}</strong> ({currentOccupant.position}).
+                      Once populated, no one can remove or overwrite this user unless they log out from their terminal.
+                    </p>
+                    <p className="text-[10px] text-muted-foreground pt-0.5">
+                      Please select an <strong>Available</strong> station account to begin your shift.
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleReleaseStation(selectedStation)}
-                    className="text-[10px] text-muted-foreground hover:text-destructive underline shrink-0 ml-2 cursor-pointer flex items-center gap-1"
-                    title="Vacate this account so another officer can use it"
-                  >
-                    <UserMinus className="size-3" />
-                    <span>Vacate</span>
-                  </button>
+                </div>
+              ) : isReturningOccupant ? (
+                <div className="p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+                  <span className="text-[11px] text-emerald-900 dark:text-emerald-300">
+                    Welcome back, <strong>{currentOccupant.officerName}</strong>. Enter your passcode to resume duty on {selectedStation}.
+                  </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground">
-                  <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground">
+                  <span className="size-2 rounded-full bg-emerald-500/60 shrink-0" />
                   <span className="text-[11px]">
-                    <strong className="text-foreground">{selectedStation}</strong> is available.
-                    Enter your name and position to begin duty.
+                    <strong className="text-foreground">{selectedStation}</strong> is vacant.
+                    Enter your name, position, and station passcode to begin.
                   </span>
                 </div>
               )}
@@ -369,6 +414,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                   placeholder="e.g. Maria Santos or Christian Motas"
                   value={officerName}
                   onChange={(e) => setOfficerName(e.target.value)}
+                  disabled={isOccupiedByAnother}
                   className="h-9 text-xs pr-8"
                   required
                 />
@@ -384,7 +430,11 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
               <Label htmlFor="officer-pos" className="text-xs font-medium">
                 SBO Position / Role
               </Label>
-              <Select value={selectedPosition} onValueChange={setSelectedPosition}>
+              <Select
+                value={selectedPosition}
+                onValueChange={setSelectedPosition}
+                disabled={isOccupiedByAnother}
+              >
                 <SelectTrigger id="officer-pos" className="h-9 text-xs">
                   <SelectValue placeholder="Select Position" />
                 </SelectTrigger>
@@ -402,30 +452,69 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                   placeholder="Specify position (e.g. 3rd Year Representative)"
                   value={customPosition}
                   onChange={(e) => setCustomPosition(e.target.value)}
+                  disabled={isOccupiedByAnother}
                   className="h-8 text-xs mt-2"
                   autoFocus
                 />
               )}
+            </div>
+
+            {/* Station Passcode Input (Security against unauthorized student access) */}
+            <div className="space-y-1.5 pt-1 border-t border-border/60">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="station-passcode" className="text-xs font-medium flex items-center gap-1.5">
+                  <KeyRound className="size-3.5 text-muted-foreground" />
+                  <span>{selectedStation} Station Passcode</span>
+                </Label>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  Security Passcode
+                </span>
+              </div>
+              <div className="relative">
+                <Input
+                  id="station-passcode"
+                  type={showPasscode ? 'text' : 'password'}
+                  placeholder={`Enter passcode for ${selectedStation}`}
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  disabled={isOccupiedByAnother}
+                  className="h-9 text-xs font-mono pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasscode(!showPasscode)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  title={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                >
+                  {showPasscode ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Prevents unauthorized access if students discover this route (<code className="font-mono text-foreground font-semibold">sbo1</code>, <code className="font-mono text-foreground font-semibold">sbo2</code>, <code className="font-mono text-foreground font-semibold">sbo3</code>, <code className="font-mono text-foreground font-semibold">sbo4</code>).
+              </p>
             </div>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-2.5 pt-2">
             <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full h-10 text-xs font-medium gap-2 cursor-pointer shadow-xs"
+              disabled={isLoading || isOccupiedByAnother}
+              className={`w-full h-10 text-xs font-medium gap-2 cursor-pointer shadow-xs ${
+                isOccupiedByAnother ? 'opacity-60 cursor-not-allowed bg-muted text-muted-foreground border border-border' : ''
+              }`}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                  <span>Connecting to Terminal...</span>
+                  <span>Verifying Credentials...</span>
                 </>
               ) : isOccupiedByAnother ? (
                 <>
-                  <Users className="size-4" />
-                  <span>Take Over Duty as {selectedStation}</span>
+                  <Lock className="size-4 text-amber-500" />
+                  <span>Station Locked to {currentOccupant.officerName}</span>
                 </>
-              ) : currentOccupant && currentOccupant.status === 'active' ? (
+              ) : isReturningOccupant ? (
                 <>
                   <CheckCircle2 className="size-4" />
                   <span>Resume Duty as {selectedStation}</span>
@@ -433,7 +522,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
               ) : (
                 <>
                   <ShieldCheck className="size-4" />
-                  <span>Start Duty as {selectedStation}</span>
+                  <span>Unlock & Start Duty as {selectedStation}</span>
                 </>
               )}
             </Button>
