@@ -193,7 +193,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
               </CardContent>
 
               <CardFooter className="p-3 pt-0 text-[10px] text-muted-foreground border-t border-border/40 mt-auto flex items-center justify-between">
-                <span>Gate Scan</span>
+                <span>Official Stamp</span>
                 <span className="font-mono">{item.date}, 2026</span>
               </CardFooter>
             </Card>
@@ -212,13 +212,13 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
               </h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Each slot is verified and stamped when an SBO officer scans your pass at the gate. Complete all required slots to obtain semester clearance.
+              Each slot is verified and stamped when an SBO officer scans your pass. Complete all required slots to obtain semester clearance.
             </p>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground shrink-0">
             <div className="p-3 rounded-lg border border-border bg-muted/20 text-center min-w-[140px]">
-              <span className="text-[10px] block uppercase text-muted-foreground">SBO Gate Sign-off</span>
+              <span className="text-[10px] block uppercase text-muted-foreground">SBO Sign-off</span>
               <span className="font-semibold text-foreground font-sans">
                 {clearedSlotsCount > 0 ? `${clearedSlotsCount} Stamped` : 'Pending Scans'}
               </span>

@@ -119,7 +119,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
                 Verified Device
               </span>
               <span className="text-[10px] text-muted-foreground">
-                Present this to the SBO officer at the gate
+                Present this to the SBO officer for scanning
               </span>
             </div>
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">

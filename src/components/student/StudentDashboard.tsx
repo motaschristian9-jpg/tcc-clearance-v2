@@ -16,7 +16,7 @@ import {
   Clock,
   ArrowRight,
   Download,
-  Sparkles,
+  ScanLine,
   ShieldCheck,
   Award,
   FileCheck2,
@@ -392,7 +392,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <span>Attendance Stamp History</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Time In and Time Out stamps recorded by SBO gate officers.
+                Time In and Time Out stamps recorded by SBO officers.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -405,7 +405,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           {stamp.day} · {stamp.slotLabel}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          {stamp.date}, 2026 · Gate Scanner
+                          {stamp.date}, 2026 · SBO Scanner
                         </span>
                       </div>
                       <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-emerald-600 dark:text-emerald-400">
@@ -431,8 +431,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Sparkles className="size-3.5 text-foreground" />
-                  <span>Gate Check-In</span>
+                  <ScanLine className="size-3.5 text-foreground" />
+                  <span>Attendance Pass</span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-600 font-medium">
                   <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
@@ -443,7 +443,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 Attendance Pass
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Present your QR pass to SBO officers at the gate.
+                Present your QR pass to SBO officers for attendance verification.
               </CardDescription>
             </CardHeader>
 
