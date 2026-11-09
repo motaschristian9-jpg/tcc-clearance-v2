@@ -118,3 +118,28 @@
   margin-bottom: 0.25rem;
 }
 
+@media print {
+  header,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .shadow-sm,
+  .shadow-md,
+  .shadow-xs {
+    box-shadow: none !important;
+  }
+}
+

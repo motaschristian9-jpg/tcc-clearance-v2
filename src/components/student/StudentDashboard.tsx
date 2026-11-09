@@ -429,18 +429,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {/* Prominent Attendance QR Pass Card */}
           <Card className="border border-border bg-card shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <ScanLine className="size-3.5 text-foreground" />
-                  <span>Attendance Pass</span>
-                </div>
-                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-600 font-medium">
-                  <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Ready
-                </span>
-              </div>
-              <CardTitle className="text-base font-semibold tracking-tight text-foreground pt-1">
-                Attendance Pass
+              <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+                <ScanLine className="size-4" />
+                <span>Attendance Pass</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
                 Present your QR pass to SBO officers for attendance verification.

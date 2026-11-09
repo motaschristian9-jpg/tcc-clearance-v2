@@ -8,6 +8,7 @@ import { StudentDetailsCard } from '@/components/student/StudentDetailsCard';
 import { PhotoCaptureCard } from '@/components/student/PhotoCaptureCard';
 import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { StudentPassCard } from '@/components/student/StudentPassCard';
+import { StudentPassResponsiveModal } from '@/components/student/StudentPassResponsiveModal';
 import { ClearanceMatrixCard } from '@/components/student/ClearanceMatrixCard';
 import {
   AlertDialog,
@@ -41,6 +42,9 @@ export const App: React.FC = () => {
 
   // Sign out confirmation dialog state
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
+
+  // Responsive QR Pass Dialog/Drawer state
+  const [showPassModal, setShowPassModal] = useState(false);
 
   // Student Profile State
   const [studentDbId, setStudentDbId] = useState<string | null>(null);
@@ -332,7 +336,7 @@ export const App: React.FC = () => {
             photoDataUrl={photoDataUrl}
             userEmail={authUser?.email || 'student@tcc.edu.ph'}
             attendanceRecords={attendanceRecords}
-            onOpenQrPass={() => setCurrentScreen('pass')}
+            onOpenQrPass={() => setShowPassModal(true)}
             onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
             onSignOut={() => setShowSignOutDialog(true)}
           />
@@ -364,6 +368,21 @@ export const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Responsive QR Pass: Dialog on Desktop, Drawer on Mobile */}
+      <StudentPassResponsiveModal
+        open={showPassModal}
+        onOpenChange={setShowPassModal}
+        fullName={fullName || 'Student'}
+        schoolId={schoolId || '---'}
+        department={department || 'CIT'}
+        section={section || '---'}
+        passCountdown={passCountdown}
+        onViewActivityCard={() => {
+          setShowPassModal(false);
+          setCurrentScreen('activity-card');
+        }}
+      />
 
       {/* Global Sign Out Confirmation Alert Dialog */}
       <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
