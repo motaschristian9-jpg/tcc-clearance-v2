@@ -58,3 +58,4 @@ create policy "Students update own devices" on public.student_devices
   with check (
     student_id in (select id from public.students where profile_id = auth.uid())
   );
+

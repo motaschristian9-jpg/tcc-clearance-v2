@@ -5,7 +5,6 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -17,11 +16,9 @@ import {
   Clock,
   ArrowRight,
   Download,
-  Wifi,
   Sparkles,
   ShieldCheck,
   Award,
-  Layers,
   FileCheck2,
   RefreshCw,
 } from 'lucide-react';
@@ -367,13 +364,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 /* Clean Empty State when no events exist in database */
                 <div className="py-12 px-4 text-center border border-dashed border-border rounded-xl bg-muted/10 space-y-3">
                   <Calendar className="size-8 mx-auto text-muted-foreground/40" />
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-sm text-foreground">
+                  <div>
+                    <h3 className="font-medium text-sm text-foreground">
                       No Clearance Activities Scheduled
                     </h3>
-                    <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                      There are currently no active clearance events published for {department}. When an event is scheduled by your department SBO, it will appear here.
-                    </p>
                   </div>
                   <Button
                     variant="outline"
@@ -421,26 +415,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-xs text-muted-foreground space-y-1">
-                  <Clock className="size-5 mx-auto text-muted-foreground/50 mb-2" />
-                  <p className="font-medium text-foreground">No attendance stamps yet</p>
-                  <p className="text-[11px] max-w-sm mx-auto">
-                    When an SBO officer scans your pass at an event gate, your Time In and Time Out will appear here.
-                  </p>
+                <div className="py-8 text-center text-xs text-muted-foreground">
+                  <Clock className="size-5 mx-auto text-muted-foreground/40 mb-1.5" />
+                  <p className="font-medium text-muted-foreground">No attendance stamps yet</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Attendance QR Pass Generator & Device Hub */}
+        {/* Right Column: Attendance QR Pass Generator & Academic Summary */}
         <div className="lg:col-span-4 space-y-6">
           {/* Prominent Attendance QR Pass Card */}
-          <Card className="border-2 border-foreground/30 bg-muted/10 shadow-sm">
+          <Card className="border border-border bg-card shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground">
-                  <Sparkles className="size-3.5" />
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Sparkles className="size-3.5 text-foreground" />
                   <span>Gate Check-In</span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-600 font-medium">
@@ -448,52 +439,29 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   Ready
                 </span>
               </div>
-              <CardTitle className="text-lg font-semibold tracking-tight text-foreground pt-1">
+              <CardTitle className="text-base font-semibold tracking-tight text-foreground pt-1">
                 Attendance Pass
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
-                Present your pass to SBO officers at the gate for your Time In and Time Out.
+              <CardDescription className="text-xs text-muted-foreground">
+                Present your QR pass to SBO officers at the gate.
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent>
               {/* QR Action Button - Task-Oriented & Action First */}
               <Button
                 type="button"
                 size="lg"
                 onClick={onOpenQrPass}
-                className="w-full h-12 text-xs font-semibold gap-2.5 shadow-sm cursor-pointer"
+                className="w-full h-11 text-xs font-semibold gap-2.5 shadow-sm cursor-pointer"
               >
                 <QrCode className="size-4" />
                 <span>Show My QR Pass</span>
               </Button>
-
-              <div className="p-3 rounded-lg border border-border bg-card space-y-2 text-xs">
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                  <span className="flex items-center gap-1">
-                    <Wifi className="size-3" /> Offline Mode
-                  </span>
-                  <span className="font-medium text-foreground">Works Without Internet</span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                  <span>Pass Refresh Rate</span>
-                  <span className="font-medium text-foreground">Every 30 seconds</span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                  <span>Security</span>
-                  <span className="text-emerald-600 font-medium">Tamper-proof & Verified</span>
-                </div>
-              </div>
             </CardContent>
-
-            <CardFooter className="pt-0 text-[11px] text-muted-foreground leading-relaxed">
-              No mobile data or Wi-Fi needed at venue gates. Passes work fully offline.
-            </CardFooter>
           </Card>
 
-          {/* Student Profile Card */}
+          {/* Student Academic Record Card */}
           <Card className="border border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -509,31 +477,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Class Section</span>
-                <span className="font-medium text-foreground font-mono">{section || '3A'}</span>
+                <span className="font-medium text-foreground font-mono">{section || '---'}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Student ID</span>
-                <span className="font-mono font-medium text-foreground">{schoolId || '20241373'}</span>
+                <span className="font-mono font-medium text-foreground">{schoolId || '---'}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Academic Year</span>
                 <span className="font-mono font-medium text-foreground">2025-2026</span>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Single Device Policy Notice */}
-          <Card className="border border-border bg-muted/20 shadow-xs">
-            <CardContent className="p-4 space-y-2 text-xs">
-              <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
-                <Layers className="size-3.5" />
-                <span>Single Device Policy</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Your pass is registered to this phone. If you sign in on another phone, an email verification code will be sent to confirm the device transfer.
-              </p>
             </CardContent>
           </Card>
         </div>
