@@ -42,14 +42,98 @@ import {
   logAccountLogin,
   User,
 } from '@/lib/supabase';
-import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText } from 'lucide-react';
+import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, ArrowLeft, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { SboSignInCard } from '@/components/officer/SboSignInCard';
+import { SboTerminalScreen } from '@/components/officer/SboTerminalScreen';
+import { EventDay, TimeSlotType } from '@/types/attendance';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+
+// Helper to detect hidden SBO portal route from hash, query param, or pathname
+const checkIsSboRoute = () => {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  const pathname = window.location.pathname.toLowerCase();
+  return (
+    hash === '#sbo' ||
+    hash === '#officer' ||
+    hash === '#terminal' ||
+    search.includes('portal=sbo') ||
+    search.includes('role=officer') ||
+    pathname.endsWith('/sbo')
+  );
+};
 
 export const App: React.FC = () => {
   // Current active screen in student flow
   const [currentScreen, setCurrentScreen] = useState<StudentScreen>('signin');
   const [authUser, setAuthUser] = useState<User | null>(null);
+
+  // Hidden SBO Officer Portal state
+  const [isSboPortal, setIsSboPortal] = useState<boolean>(() => checkIsSboRoute());
+  const [sboOfficer, setSboOfficer] = useState<{
+    id: string;
+    email: string;
+    name: string;
+    department: string;
+    role: 'officer' | 'head';
+  } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('TCC_SBO_OFFICER');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
+
+  // Secret Easter Egg Click Counter (3 quick clicks on TCC logo activates SBO portal)
+  const [secretClicks, setSecretClicks] = useState<number>(0);
+  const handleSecretTrigger = () => {
+    const next = secretClicks + 1;
+    if (next >= 3) {
+      window.location.hash = '#sbo';
+      setIsSboPortal(true);
+      setSecretClicks(0);
+      toast.success('SBO Officer Portal Gateway Detected');
+    } else {
+      setSecretClicks(next);
+      setTimeout(() => setSecretClicks(0), 1200);
+    }
+  };
+
+  // Listen to hash changes & officer hotkey (Ctrl + Shift + O)
+  useEffect(() => {
+    const handleHash = () => setIsSboPortal(checkIsSboRoute());
+    window.addEventListener('hashchange', handleHash);
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'O' || e.key === 'o')) {
+        e.preventDefault();
+        if (isSboPortal) {
+          window.location.hash = '';
+          setIsSboPortal(false);
+          toast.info('Switched to Student Portal');
+        } else {
+          window.location.hash = '#sbo';
+          setIsSboPortal(true);
+          toast.success('SBO Officer Portal Unlocked');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHash);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [isSboPortal]);
 
   // Sign out confirmation dialog state
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
@@ -85,14 +169,50 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Intramurals Attendance Records for Clearance Card Matrix (starts fresh)
-  const [attendanceRecords] = useState<DayAttendance[]>([
+  // Intramurals Attendance Records for Clearance Card Matrix
+  const [attendanceRecords, setAttendanceRecords] = useState<DayAttendance[]>([
     { day: 'Day 1', date: 'Nov 10', slots: {}, cleared: false },
     { day: 'Day 2', date: 'Nov 11', slots: {}, cleared: false },
     { day: 'Day 3', date: 'Nov 12', slots: {}, cleared: false },
     { day: 'Day 4', date: 'Nov 13', slots: {}, cleared: false },
     { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
   ]);
+
+  // SBO Officer attendance stamping handler
+  const handleOfficerApproveAttendance = async (day: EventDay, slot: TimeSlotType) => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    setAttendanceRecords((prev) =>
+      prev.map((rec) => {
+        if (rec.day === day) {
+          const newSlots = { ...rec.slots, [slot]: timeStr };
+          const allFour =
+            newSlots['morning-in'] &&
+            newSlots['morning-out'] &&
+            newSlots['afternoon-in'] &&
+            newSlots['afternoon-out'];
+          return { ...rec, slots: newSlots, cleared: !!allFour };
+        }
+        return rec;
+      })
+    );
+
+    // Save attendance stamp to Supabase
+    const supabase = getSupabase();
+    if (supabase && studentDbId) {
+      try {
+        await supabase.from('attendance').insert({
+          student_id: studentDbId,
+          method: 'qr',
+          status: 'valid',
+          scanned_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn('Attendance sync note:', err);
+      }
+    }
+  };
 
   // Listen to Supabase Authentication & Session
   useEffect(() => {
@@ -283,201 +403,276 @@ export const App: React.FC = () => {
       <header className="w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="size-9 rounded-lg border border-foreground/20 flex items-center justify-center text-xs font-bold tracking-wider text-foreground bg-muted/30">
+            <button
+              type="button"
+              onClick={handleSecretTrigger}
+              className="size-9 rounded-lg border border-foreground/20 flex items-center justify-center text-xs font-bold tracking-wider text-foreground bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer select-none"
+              title="Tagoloan Community College"
+              aria-label="TCC Logo"
+            >
               TCC
-            </div>
+            </button>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold tracking-tight text-foreground">
-                  Event Clearance System
+                  {isSboPortal ? 'SBO Officer Gate Terminal' : 'Event Clearance System'}
                 </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                  <ShieldCheck className="size-3 text-emerald-600" />
-                  Official
-                </span>
+                {isSboPortal ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                    <Lock className="size-2.5" />
+                    Restricted
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                    <ShieldCheck className="size-3 text-emerald-600" />
+                    Official
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
-                Tagoloan Community College · Student Portal
+                {isSboPortal
+                  ? 'Authorized Personnel Only · Gate Clearance Terminal'
+                  : 'Tagoloan Community College · Student Portal'}
               </p>
             </div>
           </div>
 
-          {/* Student Status & User Avatar Dropdown Menu */}
-          {authUser && currentScreen !== 'signin' && (
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-medium text-foreground truncate max-w-[180px]">
-                  {fullName || 'Student'}
-                </span>
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  {department} · {section || '3A'}
-                </span>
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="relative rounded-full ring-offset-background transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:opacity-90 active:scale-95 cursor-pointer"
-                    aria-label="Student profile menu"
-                  >
-                    <Avatar className="size-9 border border-border shadow-xs">
-                      <AvatarImage
-                        src={photoDataUrl || authUser.user_metadata?.avatar_url || ''}
-                        alt={fullName || 'Student'}
-                      />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                        {fullName ? fullName.charAt(0).toUpperCase() : 'T'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1.5">
-                  <DropdownMenuLabel className="font-normal p-2">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-xs font-semibold leading-none text-foreground truncate">
-                        {fullName || 'Student'}
-                      </p>
-                      <p className="text-[11px] leading-none text-muted-foreground truncate">
-                        {authUser.email}
-                      </p>
-                      <p className="text-[10px] font-mono text-muted-foreground pt-0.5">
-                        {department} · ID: {schoolId || '---'}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowEditProfileModal(true)}>
-                    <UserIcon className="size-4 mr-2" />
-                    <span>Edit Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowPassModal(true)}>
-                    <QrCode className="size-4 mr-2" />
-                    <span>My Attendance Pass</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setCurrentScreen('activity-card')}>
-                    <FileText className="size-4 mr-2" />
-                    <span>Clearance Cards</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setShowSignOutDialog(true)}
-                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                  >
-                    <LogOut className="size-4 mr-2" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          {/* SBO Terminal Quick Actions or Student Profile Dropdown */}
+          {isSboPortal ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  window.location.hash = '';
+                  setIsSboPortal(false);
+                }}
+                className="h-8 text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="size-3.5" />
+                <span className="hidden sm:inline">Student View</span>
+              </Button>
             </div>
+          ) : (
+            /* Student Status & User Avatar Dropdown Menu */
+            authUser && currentScreen !== 'signin' && (
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col text-right">
+                  <span className="text-xs font-medium text-foreground truncate max-w-[180px]">
+                    {fullName || 'Student'}
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {department} · {section || '3A'}
+                  </span>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="relative rounded-full ring-offset-background transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:opacity-90 active:scale-95 cursor-pointer"
+                      aria-label="Student profile menu"
+                    >
+                      <Avatar className="size-9 border border-border shadow-xs">
+                        <AvatarImage
+                          src={photoDataUrl || authUser.user_metadata?.avatar_url || ''}
+                          alt={fullName || 'Student'}
+                        />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                          {fullName ? fullName.charAt(0).toUpperCase() : 'T'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 p-1.5">
+                    <DropdownMenuLabel className="font-normal p-2">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-xs font-semibold leading-none text-foreground truncate">
+                          {fullName || 'Student'}
+                        </p>
+                        <p className="text-[11px] leading-none text-muted-foreground truncate">
+                          {authUser.email}
+                        </p>
+                        <p className="text-[10px] font-mono text-muted-foreground pt-0.5">
+                          {department} · ID: {schoolId || '---'}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowEditProfileModal(true)}>
+                      <UserIcon className="size-4 mr-2" />
+                      <span>Edit Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowPassModal(true)}>
+                      <QrCode className="size-4 mr-2" />
+                      <span>My Attendance Pass</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setCurrentScreen('activity-card')}>
+                      <FileText className="size-4 mr-2" />
+                      <span>Clearance Cards</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setShowSignOutDialog(true)}
+                      className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                    >
+                      <LogOut className="size-4 mr-2" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )
           )}
         </div>
       </header>
 
       {/* Main Full-Width Responsive Workspace */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col justify-start">
-        {/* Sign In Screen */}
-        {currentScreen === 'signin' && (
-          <div className="flex-1 flex items-center justify-center py-6">
-            <SignInCard />
-          </div>
-        )}
-
-        {/* Device Transfer OTP Screen */}
-        {currentScreen === 'otp' && (
-          <div className="flex-1 flex items-center justify-center py-6">
-            <OtpVerificationCard
-              userEmail={authUser?.email || 'your Google account'}
-              onVerified={handleOtpVerified}
-              onCancel={() => setShowSignOutDialog(true)}
+        {isSboPortal ? (
+          sboOfficer ? (
+            <SboTerminalScreen
+              officer={sboOfficer}
+              currentStudent={{
+                fullName: fullName || 'Christian Orlan Motas',
+                schoolId: schoolId || '2023-01048',
+                department: department || 'CIT',
+                section: section || '3A',
+                photoDataUrl,
+              }}
+              onApproveAttendance={handleOfficerApproveAttendance}
+              onLockTerminal={() => {
+                setSboOfficer(null);
+                localStorage.removeItem('TCC_SBO_OFFICER');
+                toast.info('Terminal Locked', {
+                  description: 'SBO session locked for security.',
+                });
+              }}
+              onExitToStudentPortal={() => {
+                window.location.hash = '';
+                setIsSboPortal(false);
+              }}
             />
-          </div>
-        )}
+          ) : (
+            <div className="flex-1 flex items-center justify-center py-6">
+              <SboSignInCard
+                onOfficerAuthenticated={(officer) => {
+                  setSboOfficer(officer);
+                  localStorage.setItem('TCC_SBO_OFFICER', JSON.stringify(officer));
+                }}
+                onBackToStudentPortal={() => {
+                  window.location.hash = '';
+                  setIsSboPortal(false);
+                }}
+              />
+            </div>
+          )
+        ) : (
+          <>
+            {/* Sign In Screen */}
+            {currentScreen === 'signin' && (
+              <div className="flex-1 flex items-center justify-center py-6">
+                <SignInCard />
+              </div>
+            )}
 
-        {/* Onboarding Step 1: Privacy Consent */}
-        {currentScreen === 'consent' && (
-          <div className="flex-1 flex items-center justify-center py-6">
-            <ConsentCard
-              onAgree={() => setCurrentScreen('details')}
-              onCancel={() => setShowSignOutDialog(true)}
-            />
-          </div>
-        )}
+            {/* Device Transfer OTP Screen */}
+            {currentScreen === 'otp' && (
+              <div className="flex-1 flex items-center justify-center py-6">
+                <OtpVerificationCard
+                  userEmail={authUser?.email || 'your Google account'}
+                  onVerified={handleOtpVerified}
+                  onCancel={() => setShowSignOutDialog(true)}
+                />
+              </div>
+            )}
 
-        {/* Onboarding Step 2: Student Details Form */}
-        {currentScreen === 'details' && (
-          <div className="flex-1 flex items-center justify-center py-6">
-            <StudentDetailsCard
-              fullName={fullName}
-              setFullName={setFullName}
-              schoolId={schoolId}
-              setSchoolId={setSchoolId}
-              department={department}
-              setDepartment={setDepartment}
-              yearLevel={yearLevel}
-              setYearLevel={setYearLevel}
-              section={section}
-              setSection={setSection}
-              onNext={() => setCurrentScreen('photo')}
-              onBack={() => setCurrentScreen('consent')}
-            />
-          </div>
-        )}
+            {/* Onboarding Step 1: Privacy Consent */}
+            {currentScreen === 'consent' && (
+              <div className="flex-1 flex items-center justify-center py-6">
+                <ConsentCard
+                  onAgree={() => setCurrentScreen('details')}
+                  onCancel={() => setShowSignOutDialog(true)}
+                />
+              </div>
+            )}
 
-        {/* Onboarding Step 3: Face Photo Capture */}
-        {currentScreen === 'photo' && (
-          <div className="flex-1 flex items-center justify-center py-6">
-            <PhotoCaptureCard
-              photoDataUrl={photoDataUrl}
-              onPhotoCaptured={setPhotoDataUrl}
-              onRetake={() => setPhotoDataUrl(null)}
-              onNext={handleCompleteRegistration}
-              onBack={() => setCurrentScreen('details')}
-            />
-          </div>
-        )}
+            {/* Onboarding Step 2: Student Details Form */}
+            {currentScreen === 'details' && (
+              <div className="flex-1 flex items-center justify-center py-6">
+                <StudentDetailsCard
+                  fullName={fullName}
+                  setFullName={setFullName}
+                  schoolId={schoolId}
+                  setSchoolId={setSchoolId}
+                  department={department}
+                  setDepartment={setDepartment}
+                  yearLevel={yearLevel}
+                  setYearLevel={setYearLevel}
+                  section={section}
+                  setSection={setSection}
+                  onNext={() => setCurrentScreen('photo')}
+                  onBack={() => setCurrentScreen('consent')}
+                />
+              </div>
+            )}
 
-        {/* Student Dashboard: Takes Advantage of the Whole Screen! */}
-        {currentScreen === 'dashboard' && (
-          <StudentDashboard
-            fullName={fullName || 'Student'}
-            schoolId={schoolId || '---'}
-            department={department || 'CIT'}
-            section={section || '---'}
-            photoDataUrl={photoDataUrl}
-            userEmail={authUser?.email || 'student@tcc.edu.ph'}
-            attendanceRecords={attendanceRecords}
-            onOpenQrPass={() => setShowPassModal(true)}
-            onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
-            onSignOut={() => setShowSignOutDialog(true)}
-            onEditProfile={() => setShowEditProfileModal(true)}
-          />
-        )}
+            {/* Onboarding Step 3: Face Photo Capture */}
+            {currentScreen === 'photo' && (
+              <div className="flex-1 flex items-center justify-center py-6">
+                <PhotoCaptureCard
+                  photoDataUrl={photoDataUrl}
+                  onPhotoCaptured={setPhotoDataUrl}
+                  onRetake={() => setPhotoDataUrl(null)}
+                  onNext={handleCompleteRegistration}
+                  onBack={() => setCurrentScreen('details')}
+                />
+              </div>
+            )}
 
-        {/* Dynamic Rotating QR Pass Modal/Screen */}
-        {currentScreen === 'pass' && (
-          <div className="flex-1 flex items-center justify-center py-4">
-            <StudentPassCard
-              fullName={fullName || 'Student'}
-              schoolId={schoolId || '---'}
-              department={department || 'CIT'}
-              section={section || '---'}
-              passCountdown={passCountdown}
-              onViewActivityCard={() => setCurrentScreen('activity-card')}
-              onBackToDashboard={() => setCurrentScreen('dashboard')}
-            />
-          </div>
-        )}
+            {/* Student Dashboard: Takes Advantage of the Whole Screen! */}
+            {currentScreen === 'dashboard' && (
+              <StudentDashboard
+                fullName={fullName || 'Student'}
+                schoolId={schoolId || '---'}
+                department={department || 'CIT'}
+                section={section || '---'}
+                photoDataUrl={photoDataUrl}
+                userEmail={authUser?.email || 'student@tcc.edu.ph'}
+                attendanceRecords={attendanceRecords}
+                onOpenQrPass={() => setShowPassModal(true)}
+                onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
+                onSignOut={() => setShowSignOutDialog(true)}
+                onEditProfile={() => setShowEditProfileModal(true)}
+              />
+            )}
 
-        {/* 5-Day Event Clearance Matrix Card (Full Screen Responsive Matrix) */}
-        {currentScreen === 'activity-card' && (
-          <ClearanceMatrixCard
-            fullName={fullName || 'Student'}
-            schoolId={schoolId || '---'}
-            section={section || '---'}
-            attendanceRecords={attendanceRecords}
-            onBack={() => setCurrentScreen('dashboard')}
-          />
+            {/* Dynamic Rotating QR Pass Modal/Screen */}
+            {currentScreen === 'pass' && (
+              <div className="flex-1 flex items-center justify-center py-4">
+                <StudentPassCard
+                  fullName={fullName || 'Student'}
+                  schoolId={schoolId || '---'}
+                  department={department || 'CIT'}
+                  section={section || '---'}
+                  passCountdown={passCountdown}
+                  onViewActivityCard={() => setCurrentScreen('activity-card')}
+                  onBackToDashboard={() => setCurrentScreen('dashboard')}
+                />
+              </div>
+            )}
+
+            {/* 5-Day Event Clearance Matrix Card (Full Screen Responsive Matrix) */}
+            {currentScreen === 'activity-card' && (
+              <ClearanceMatrixCard
+                fullName={fullName || 'Student'}
+                schoolId={schoolId || '---'}
+                section={section || '---'}
+                attendanceRecords={attendanceRecords}
+                onBack={() => setCurrentScreen('dashboard')}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -534,7 +729,17 @@ export const App: React.FC = () => {
       <footer className="w-full border-t border-border bg-card/30 mt-auto">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span>Tagoloan Community College · Baluarte, Tagoloan, Misamis Oriental</span>
-          <span>CIT Event Attendance & Clearance Management Platform</span>
+          <span
+            onDoubleClick={() => {
+              window.location.hash = '#sbo';
+              setIsSboPortal(true);
+              toast.success('SBO Gateway Opened');
+            }}
+            className="cursor-default select-none hover:text-foreground/70 transition-colors"
+            title="CIT Clearance Management"
+          >
+            CIT Event Attendance & Clearance Management Platform
+          </span>
         </div>
       </footer>
 
