@@ -42,7 +42,7 @@ import {
   logAccountLogin,
   User,
 } from '@/lib/supabase';
-import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, Lock, UserMinus } from 'lucide-react';
+import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SboSignInCard } from '@/components/officer/SboSignInCard';
 import { SboTerminalScreen } from '@/components/officer/SboTerminalScreen';
@@ -478,9 +478,9 @@ export const App: React.FC = () => {
                   {isSboPortal ? 'SBO Officer Gate Terminal' : 'Event Clearance System'}
                 </span>
                 {isSboPortal ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                    <Lock className="size-2.5" />
-                    Restricted
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    <ShieldCheck className="size-2.5" />
+                    SBO Gate
                   </span>
                 ) : (
                   <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
@@ -599,7 +599,11 @@ export const App: React.FC = () => {
       </header>
 
       {/* Main Full-Width Responsive Workspace */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col justify-start">
+      <main
+        className={`flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col ${
+          isSboPortal && !sboOfficer ? 'py-2 sm:py-4 justify-center' : 'py-6 sm:py-8 justify-start'
+        }`}
+      >
         {isSboPortal ? (
           sboOfficer ? (
             <SboTerminalScreen
@@ -616,7 +620,7 @@ export const App: React.FC = () => {
               onReleaseTerminal={handleReleaseSboTerminal}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center py-6">
+            <div className="flex-1 flex items-center justify-center py-2">
               <SboSignInCard
                 onOfficerAuthenticated={(officer) => {
                   setSboOfficer(officer);

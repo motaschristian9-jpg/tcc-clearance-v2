@@ -23,7 +23,6 @@ import {
   Loader2,
   UserCheck,
   CheckCircle2,
-  KeyRound,
   Eye,
   EyeOff,
 } from 'lucide-react';
@@ -230,73 +229,116 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto my-auto py-6">
-      <Card className="border border-border/80 shadow-xl bg-card">
-        <CardHeader className="text-center pb-3 pt-5">
-          <div className="mx-auto size-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-2 shadow-xs">
-            <ShieldCheck className="size-5 text-foreground" />
+    <div className="w-full max-w-[440px] mx-auto my-auto">
+      <Card className="border border-border/80 shadow-lg bg-card">
+        <CardHeader className="text-center pb-2.5 pt-4 px-5">
+          <div className="flex items-center justify-center gap-2">
+            <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xs">
+              <ShieldCheck className="size-4 text-primary" />
+            </div>
+            <div className="text-left">
+              <CardTitle className="text-sm sm:text-base font-semibold tracking-tight text-foreground leading-tight">
+                SBO Gate Terminal
+              </CardTitle>
+              <CardDescription className="text-[11px] text-muted-foreground">
+                Select station account and enter passcode
+              </CardDescription>
+            </div>
           </div>
-
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-muted text-muted-foreground border border-border mx-auto mb-1">
-            <Lock className="size-2.5" />
-            <span>Restricted Gateway</span>
-          </div>
-
-          <CardTitle className="text-lg font-semibold tracking-tight text-foreground">
-            SBO Gate Terminal
-          </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">
-            Sign in to start clearance duty.
-          </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-3.5 text-xs">
-            <FieldGroup className="gap-3">
-              {/* Department */}
-              <Field>
-                <FieldLabel htmlFor="sbo-dept">Department</FieldLabel>
-                <Select
-                  value={department}
-                  onValueChange={(val) => {
-                    setDepartment(val);
-                    setPasscode('');
-                    const newKey = `${val}-${selectedStation.replace(/\s+/g, '')}`;
-                    const occupant = accounts[newKey];
-                    if (occupant && occupant.status === 'active') {
-                      setOfficerName(occupant.officerName);
-                      if (OFFICER_POSITIONS.includes(occupant.position)) {
-                        setSelectedPosition(occupant.position);
-                        setCustomPosition('');
+          <CardContent className="space-y-2.5 px-5 py-0 text-xs">
+            <FieldGroup className="gap-2.5">
+              {/* Row 1: Department & SBO Position */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <Field className="gap-1">
+                  <FieldLabel htmlFor="sbo-dept" className="text-[11px] font-medium">
+                    Department
+                  </FieldLabel>
+                  <Select
+                    value={department}
+                    onValueChange={(val) => {
+                      setDepartment(val);
+                      setPasscode('');
+                      const newKey = `${val}-${selectedStation.replace(/\s+/g, '')}`;
+                      const occupant = accounts[newKey];
+                      if (occupant && occupant.status === 'active') {
+                        setOfficerName(occupant.officerName);
+                        if (OFFICER_POSITIONS.includes(occupant.position)) {
+                          setSelectedPosition(occupant.position);
+                          setCustomPosition('');
+                        } else {
+                          setSelectedPosition('Custom / Other');
+                          setCustomPosition(occupant.position);
+                        }
                       } else {
-                        setSelectedPosition('Custom / Other');
-                        setCustomPosition(occupant.position);
+                        setOfficerName('');
+                        setSelectedPosition('Attendance Committee Head');
+                        setCustomPosition('');
                       }
-                    } else {
-                      setOfficerName('');
-                      setSelectedPosition('Attendance Committee Head');
-                      setCustomPosition('');
-                    }
-                  }}
-                >
-                  <SelectTrigger id="sbo-dept" className="h-9 text-xs">
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TCC_DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept.code} value={dept.code}>
-                        <span className="font-semibold">{dept.code}</span> · {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+                    }}
+                  >
+                    <SelectTrigger id="sbo-dept" className="h-8 text-xs">
+                      <SelectValue placeholder="Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TCC_DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept.code} value={dept.code}>
+                          <span className="font-semibold">{dept.code}</span> · {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-              {/* SBO Accounts Grid */}
-              <Field>
-                <div className="flex items-center justify-between pb-0.5">
-                  <FieldLabel>SBO Account</FieldLabel>
-                  <span className="text-[10px] text-muted-foreground font-mono">4 Accounts</span>
+                <Field className="gap-1">
+                  <FieldLabel htmlFor="officer-pos" className="text-[11px] font-medium">
+                    Position
+                  </FieldLabel>
+                  <Select
+                    value={selectedPosition}
+                    onValueChange={setSelectedPosition}
+                    disabled={isOccupied}
+                  >
+                    <SelectTrigger
+                      id="officer-pos"
+                      className={`h-8 text-xs ${
+                        isOccupied ? 'bg-muted/50 cursor-not-allowed opacity-90' : ''
+                      }`}
+                    >
+                      <SelectValue placeholder="Position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OFFICER_POSITIONS.map((pos) => (
+                        <SelectItem key={pos} value={pos}>
+                          {pos}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              {selectedPosition === 'Custom / Other' && (
+                <Field className="gap-1">
+                  <Input
+                    placeholder="Specify your SBO position"
+                    value={customPosition}
+                    onChange={(e) => setCustomPosition(e.target.value)}
+                    disabled={isOccupied}
+                    readOnly={isOccupied}
+                    className="h-8 text-xs"
+                    autoFocus
+                  />
+                </Field>
+              )}
+
+              {/* Row 2: SBO Accounts 4-Station Grid */}
+              <Field className="gap-1">
+                <div className="flex items-center justify-between">
+                  <FieldLabel className="text-[11px] font-medium">Station Account</FieldLabel>
+                  <span className="text-[10px] text-muted-foreground font-mono">4 Stations</span>
                 </div>
 
                 <div className="grid grid-cols-4 gap-1.5">
@@ -311,10 +353,10 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                         key={stId}
                         type="button"
                         onClick={() => handleSelectStation(stId)}
-                        className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[58px] ${
+                        className={`px-2 py-1.5 rounded-md border text-left transition-all cursor-pointer flex flex-col justify-between h-[42px] ${
                           isSelected
                             ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
-                            : 'border-border bg-card hover:bg-muted/30'
+                            : 'border-border bg-card hover:bg-muted/40'
                         }`}
                       >
                         <div className="flex items-center justify-between w-full">
@@ -337,14 +379,14 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                           )}
                         </div>
 
-                        <div className="pt-1 w-full truncate">
+                        <div className="w-full truncate">
                           {occupied ? (
                             <span className="text-[9.5px] font-semibold text-foreground block truncate leading-tight">
                               {accountInfo.officerName.split(' ')[0]}
                             </span>
                           ) : (
                             <span className="text-[9.5px] text-muted-foreground font-mono">
-                              Free
+                              Available
                             </span>
                           )}
                         </div>
@@ -354,122 +396,88 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                 </div>
 
                 {isOccupied && (
-                  <div className="p-2 rounded-md border border-amber-500/20 bg-amber-500/10 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-1.5 mt-1">
-                    <Lock className="size-3.5 text-amber-600 shrink-0" />
+                  <div className="px-2.5 py-1 rounded-md border border-amber-500/25 bg-amber-500/10 text-[10.5px] text-amber-900 dark:text-amber-200 flex items-center gap-1.5 mt-0.5">
+                    <Lock className="size-3 text-amber-600 shrink-0" />
                     <span className="truncate">
-                      Account occupied by <strong>{currentOccupant.officerName}</strong>. Name is locked while on duty.
+                      Occupied by <strong>{currentOccupant.officerName}</strong> (name locked).
                     </span>
                   </div>
                 )}
               </Field>
 
-              {/* Officer Full Name */}
-              <Field>
-                <div className="flex items-center justify-between pb-0.5">
-                  <FieldLabel htmlFor="officer-name">Officer Name</FieldLabel>
-                  {isOccupied && (
-                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 font-mono">
-                      <Lock className="size-2.5" />
-                      Locked (In Duty)
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  <Input
-                    id="officer-name"
-                    placeholder="Enter your name"
-                    value={officerName}
-                    onChange={(e) => setOfficerName(e.target.value)}
-                    disabled={isOccupied}
-                    readOnly={isOccupied}
-                    className={`h-9 text-xs pr-8 ${
-                      isOccupied
-                        ? 'bg-muted/50 cursor-not-allowed opacity-90 select-none text-foreground font-medium'
-                        : ''
-                    }`}
-                    required
-                  />
-                  {isOccupied ? (
-                    <Lock className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400 pointer-events-none" />
-                  ) : (
-                    <UserCheck className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                  )}
-                </div>
-              </Field>
+              {/* Row 3: Officer Full Name & Passcode */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <Field className="gap-1">
+                  <div className="flex items-center justify-between">
+                    <FieldLabel htmlFor="officer-name" className="text-[11px] font-medium">
+                      Officer Name
+                    </FieldLabel>
+                    {isOccupied && (
+                      <span className="text-[9.5px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-0.5 font-mono">
+                        <Lock className="size-2" />
+                        Locked
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="officer-name"
+                      placeholder="e.g. Maria Santos"
+                      value={officerName}
+                      onChange={(e) => setOfficerName(e.target.value)}
+                      disabled={isOccupied}
+                      readOnly={isOccupied}
+                      className={`h-8 text-xs pr-7 ${
+                        isOccupied
+                          ? 'bg-muted/50 cursor-not-allowed opacity-90 select-none text-foreground font-medium'
+                          : ''
+                      }`}
+                      required
+                    />
+                    {isOccupied ? (
+                      <Lock className="size-3 absolute right-2 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400 pointer-events-none" />
+                    ) : (
+                      <UserCheck className="size-3 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    )}
+                  </div>
+                </Field>
 
-              {/* SBO Position */}
-              <Field>
-                <FieldLabel htmlFor="officer-pos">Position</FieldLabel>
-                <Select
-                  value={selectedPosition}
-                  onValueChange={setSelectedPosition}
-                  disabled={isOccupied}
-                >
-                  <SelectTrigger
-                    id="officer-pos"
-                    className={`h-9 text-xs ${
-                      isOccupied ? 'bg-muted/50 cursor-not-allowed opacity-90' : ''
-                    }`}
-                  >
-                    <SelectValue placeholder="Select Position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OFFICER_POSITIONS.map((pos) => (
-                      <SelectItem key={pos} value={pos}>
-                        {pos}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {selectedPosition === 'Custom / Other' && (
-                  <Input
-                    placeholder="Specify position"
-                    value={customPosition}
-                    onChange={(e) => setCustomPosition(e.target.value)}
-                    disabled={isOccupied}
-                    readOnly={isOccupied}
-                    className="h-8 text-xs mt-1.5"
-                    autoFocus
-                  />
-                )}
-              </Field>
-
-              {/* Passcode (Hidden, no hints or values exposed) */}
-              <Field>
-                <FieldLabel htmlFor="station-passcode" className="flex items-center gap-1.5">
-                  <KeyRound className="size-3.5 text-muted-foreground" />
-                  <span>Passcode</span>
-                </FieldLabel>
-                <div className="relative">
-                  <Input
-                    id="station-passcode"
-                    type={showPasscode ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    disabled={isLoading}
-                    className="h-9 text-xs font-mono pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasscode(!showPasscode)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                    title={showPasscode ? 'Hide passcode' : 'Show passcode'}
-                  >
-                    {showPasscode ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                  </button>
-                </div>
-              </Field>
+                <Field className="gap-1">
+                  <div className="flex items-center justify-between">
+                    <FieldLabel htmlFor="station-passcode" className="text-[11px] font-medium">
+                      Passcode
+                    </FieldLabel>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="station-passcode"
+                      type={showPasscode ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={passcode}
+                      onChange={(e) => setPasscode(e.target.value)}
+                      disabled={isLoading}
+                      className="h-8 text-xs font-mono pr-7"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasscode(!showPasscode)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      title={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                    >
+                      {showPasscode ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                    </button>
+                  </div>
+                </Field>
+              </div>
             </FieldGroup>
           </CardContent>
 
-          <CardFooter className="pt-2 pb-5">
+          <CardFooter className="pt-3 pb-4 px-5">
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs"
+              className="w-full h-8 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
             >
               {isLoading ? (
                 <>
