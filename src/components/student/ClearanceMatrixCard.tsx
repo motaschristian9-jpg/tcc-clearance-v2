@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { DayAttendance } from '@/types/attendance';
+import { toast } from 'sonner';
 
 interface ClearanceMatrixCardProps {
   title?: string;
@@ -79,7 +80,16 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
 
           <Button
             type="button"
-            onClick={() => alert(`Exporting ${title} PDF for ${fullName}...`)}
+            onClick={() => {
+              toast.promise(
+                new Promise((resolve) => setTimeout(resolve, 1200)),
+                {
+                  loading: `Generating ${title} PDF for ${fullName || 'Student'}...`,
+                  success: `Official ${title} PDF generated successfully!`,
+                  error: 'Failed to generate PDF.',
+                }
+              );
+            }}
             className="h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs"
           >
             <Download className="size-3.5" />

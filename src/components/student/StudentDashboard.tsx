@@ -26,6 +26,7 @@ import { DayAttendance } from '@/types/attendance';
 import { fetchPublishedEvents } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 
 export interface ClearanceActivity {
   id: string;
@@ -115,6 +116,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         prev.map((act) => (act.id === id ? { ...act, isDownloadedOffline: true } : act))
       );
       setDownloadingId(null);
+      toast.success('Offline pass packet saved', {
+        description: 'You can present your QR pass at event gates without Wi-Fi or cellular data.',
+      });
     }, 600);
   };
 

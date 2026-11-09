@@ -43,6 +43,8 @@ import {
   User,
 } from '@/lib/supabase';
 import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText } from 'lucide-react';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 export const App: React.FC = () => {
   // Current active screen in student flow
@@ -193,6 +195,9 @@ export const App: React.FC = () => {
     setAuthUser(null);
     resetFormState();
     setCurrentScreen('signin');
+    toast.info('Signed out', {
+      description: 'You have been signed out of your clearance session.',
+    });
   };
 
   const resetFormState = () => {
@@ -261,6 +266,10 @@ export const App: React.FC = () => {
         department_id: updated.department,
         section_id: updated.section,
         photo_path: finalPhotoPath || undefined,
+      });
+
+      toast.success('Profile updated successfully', {
+        description: 'Your student details have been saved to your clearance record.',
       });
     }
   };
@@ -528,6 +537,9 @@ export const App: React.FC = () => {
           <span>CIT Event Attendance & Clearance Management Platform</span>
         </div>
       </footer>
+
+      {/* Modern Sonner Toast Notification Center */}
+      <Toaster position="top-center" richColors closeButton />
     </div>
   );
 };

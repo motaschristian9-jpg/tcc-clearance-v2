@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Check, Loader2 } from 'lucide-react';
+import { TCC_DEPARTMENTS } from '@/types/student';
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -38,14 +39,6 @@ interface EditProfileDialogProps {
     photoDataUrl: string | null;
   }) => Promise<void>;
 }
-
-const DEPARTMENTS = [
-  { id: 'CIT', label: 'College of Information Technology' },
-  { id: 'CBA', label: 'College of Business Administration' },
-  { id: 'COE', label: 'College of Engineering' },
-  { id: 'CAS', label: 'College of Arts and Sciences' },
-  { id: 'CED', label: 'College of Education' },
-];
 
 const YEAR_LEVELS = [
   { id: '1', label: '1st Year' },
@@ -216,9 +209,9 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                   <SelectValue placeholder="Select Department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id} className="text-xs">
-                      {dept.id} - {dept.label.replace('College of ', '')}
+                  {TCC_DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.code} value={dept.code} className="text-xs">
+                      {dept.code} - {dept.name.replace('College of ', '')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -291,3 +284,4 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     </Dialog>
   );
 };
+
