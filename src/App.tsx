@@ -562,6 +562,23 @@ export const App: React.FC = () => {
                   description: 'SBO session locked for security.',
                 });
               }}
+              onReleaseTerminal={() => {
+                if (sboOfficer) {
+                  try {
+                    const raw = localStorage.getItem('TCC_SBO_ACTIVE_ACCOUNTS');
+                    if (raw) {
+                      const accs = JSON.parse(raw);
+                      delete accs[sboOfficer.stationCode];
+                      localStorage.setItem('TCC_SBO_ACTIVE_ACCOUNTS', JSON.stringify(accs));
+                    }
+                  } catch {}
+                }
+                setSboOfficer(null);
+                localStorage.removeItem('TCC_SBO_OFFICER');
+                toast.info('Shift Ended', {
+                  description: `${sboOfficer?.stationCode || 'Station'} has been released and marked Available.`,
+                });
+              }}
               onExitToStudentPortal={() => {
                 window.location.hash = '';
                 setIsSboPortal(false);

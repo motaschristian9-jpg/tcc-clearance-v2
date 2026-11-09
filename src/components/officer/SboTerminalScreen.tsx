@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { OfficerScannerCard } from './OfficerScannerCard';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, LogOut, ArrowLeft, Users, UserCheck } from 'lucide-react';
+import { ShieldCheck, LogOut, ArrowLeft, Users, UserCheck, UserMinus } from 'lucide-react';
 import { EventDay, TimeSlotType, SboOfficerSession } from '@/types/attendance';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ interface SboTerminalScreenProps {
   };
   onApproveAttendance: (day: EventDay, slot: TimeSlotType, officer: SboOfficerSession) => void;
   onLockTerminal: () => void;
+  onReleaseTerminal?: () => void;
   onExitToStudentPortal: () => void;
 }
 
@@ -24,6 +25,7 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
   currentStudent,
   onApproveAttendance,
   onLockTerminal,
+  onReleaseTerminal,
   onExitToStudentPortal,
 }) => {
   const [stampedCount, setStampedCount] = useState<number>(0);
@@ -73,12 +75,23 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
           <Button
             variant="outline"
             size="sm"
+            onClick={onReleaseTerminal || onLockTerminal}
+            className="h-8 text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-destructive"
+            title="End shift and mark account as available"
+          >
+            <UserMinus className="size-3.5" />
+            <span className="hidden sm:inline">End Shift</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onLockTerminal}
             className="h-8 text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
             title="Lock terminal screen"
           >
             <LogOut className="size-3.5" />
-            <span className="hidden sm:inline">Lock Terminal</span>
+            <span className="hidden sm:inline">Lock</span>
           </Button>
 
           <Button

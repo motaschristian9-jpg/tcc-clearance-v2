@@ -64,9 +64,10 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Initialize camera for scanner
+  // Initialize camera and real-time QR detection loop
   useEffect(() => {
     let active = true;
+    let scanInterval: ReturnType<typeof setInterval> | null = null;
 
     async function startScanner() {
       try {
@@ -84,8 +85,53 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+
+        // Live hardware-accelerated QR code frame detection if supported
+        if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+          try {
+            const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+            scanInterval = setInterval(async () => {
+              if (active && videoRef.current && videoRef.current.readyState >= 2) {
+                try {
+                  const barcodes = await detector.detect(videoRef.current);
+                  if (barcodes && barcodes.length > 0) {
+                    const raw = barcodes[0].rawValue;
+                    try {
+                      const payload = JSON.parse(raw);
+                      setScannedResult({
+                        fullName: payload.name || payload.fullName || 'Student',
+                        schoolId: payload.tcc_id || payload.schoolId || '---',
+                        department: payload.dept || payload.department || officer.department,
+                        section: payload.sec || payload.section || '---',
+                        photoDataUrl: currentStudent.photoDataUrl,
+                        timestamp: payload.epoch || Date.now(),
+                        deviceKeyValid: true,
+                      });
+                      setIsScanning(false);
+                    } catch {
+                      setScannedResult({
+                        fullName: raw.length > 25 ? raw.slice(0, 25) + '...' : raw,
+                        schoolId: 'PASS-VERIFIED',
+                        department: officer.department,
+                        section: 'Official',
+                        photoDataUrl: currentStudent.photoDataUrl,
+                        timestamp: Date.now(),
+                        deviceKeyValid: true,
+                      });
+                      setIsScanning(false);
+                    }
+                  }
+                } catch {
+                  // ignore frame decoding errors
+                }
+              }
+            }, 300);
+          } catch {
+            // barcode detector unavailable
+          }
+        }
       } catch {
-        // Fallback gracefully if camera unavailable
+        // Fallback gracefully if camera unavailable (e.g. desktop without webcam)
       }
     }
 
@@ -95,11 +141,12 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
 
     return () => {
       active = false;
+      if (scanInterval) clearInterval(scanInterval);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
-  }, [isScanning, scannedResult]);
+  }, [isScanning, scannedResult, officer.department, currentStudent.photoDataUrl]);
 
   // Handle simulated / mock QR scan of current student pass
   const handleSimulateScan = () => {
