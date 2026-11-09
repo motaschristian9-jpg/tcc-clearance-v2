@@ -194,6 +194,7 @@ export const App: React.FC = () => {
 
       const saved = await saveStudentProfileToSupabase({
         profile_id: authUser.id,
+        email: authUser.email || '',
         school_id_no: schoolId,
         full_name: fullName,
         department_id: department,

@@ -246,3 +246,4 @@ create policy "Students read own login logs" on public.account_login_logs
 drop policy if exists "Allow insert login logs" on public.account_login_logs;
 create policy "Allow insert login logs" on public.account_login_logs
   for insert with check (profile_id = auth.uid());
+

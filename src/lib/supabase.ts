@@ -111,7 +111,20 @@ export function getOrCreateDeviceId(): string {
  */
 export async function fetchStudentProfile(profileId: string) {
   const supabase = getSupabase();
-  if (!supabase) return null;
+  let localFallback: any = null;
+
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(`TCC_STUDENT_${profileId}`);
+    if (raw) {
+      try {
+        localFallback = JSON.parse(raw);
+      } catch {
+        localFallback = null;
+      }
+    }
+  }
+
+  if (!supabase) return localFallback;
 
   try {
     const { data, error } = await supabase
@@ -122,12 +135,20 @@ export async function fetchStudentProfile(profileId: string) {
 
     if (error && error.code !== 'PGRST116') {
       console.warn('Error fetching student profile from Supabase:', error.message);
-      return null;
+      return localFallback;
     }
-    return data;
+
+    if (data) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`TCC_STUDENT_${profileId}`, JSON.stringify(data));
+      }
+      return data;
+    }
+
+    return localFallback;
   } catch (err) {
-    console.warn('Supabase fetch failed:', err);
-    return null;
+    console.warn('Supabase fetch failed, using local cache:', err);
+    return localFallback;
   }
 }
 
@@ -168,6 +189,7 @@ export async function uploadStudentPhoto(userId: string, dataUrl: string): Promi
  */
 export async function saveStudentProfileToSupabase(payload: {
   profile_id: string;
+  email?: string;
   school_id_no: string;
   full_name: string;
   department_id: string;
@@ -176,46 +198,87 @@ export async function saveStudentProfileToSupabase(payload: {
   school_year?: string;
 }) {
   const supabase = getSupabase();
-  if (!supabase) return null;
+  const currentDeviceId = getOrCreateDeviceId();
+
+  // Create local profile object immediately so user is never lost
+  const localRecord = {
+    id: 'local_' + payload.profile_id,
+    profile_id: payload.profile_id,
+    school_id_no: payload.school_id_no,
+    full_name: payload.full_name,
+    department_id: payload.department_id,
+    section_id: payload.section_id,
+    photo_path: payload.photo_path || '',
+    photo_status: 'accepted',
+    status: 'approved',
+    consent_at: new Date().toISOString(),
+    school_year: payload.school_year || '2025-2026',
+  };
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`TCC_STUDENT_${payload.profile_id}`, JSON.stringify(localRecord));
+  }
+
+  if (!supabase) return localRecord;
 
   try {
+    // 0. Ensure public.profiles contains this user
+    await supabase.from('profiles').upsert(
+      {
+        id: payload.profile_id,
+        email: payload.email || '',
+        full_name: payload.full_name,
+        role: 'student',
+      },
+      { onConflict: 'id' }
+    );
+
     // 1. Upsert student record
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .upsert({
-        profile_id: payload.profile_id,
-        school_id_no: payload.school_id_no,
-        full_name: payload.full_name,
-        department_id: payload.department_id,
-        section_id: payload.section_id,
-        photo_path: payload.photo_path || '',
-        photo_status: 'accepted',
-        status: 'approved',
-        consent_at: new Date().toISOString(),
-        school_year: payload.school_year || '2025-2026',
-      })
+      .upsert(
+        {
+          profile_id: payload.profile_id,
+          school_id_no: payload.school_id_no,
+          full_name: payload.full_name,
+          department_id: payload.department_id,
+          section_id: payload.section_id,
+          photo_path: payload.photo_path || '',
+          photo_status: 'accepted',
+          status: 'approved',
+          consent_at: new Date().toISOString(),
+          school_year: payload.school_year || '2025-2026',
+        },
+        { onConflict: 'profile_id' }
+      )
       .select()
-      .single();
+      .maybeSingle();
 
     if (studentError) {
       console.warn('Error saving student to Supabase:', studentError.message);
-      return null;
+      return localRecord;
+    }
+
+    const savedRecord = student || localRecord;
+
+    // Cache the verified Supabase record locally
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`TCC_STUDENT_${payload.profile_id}`, JSON.stringify(savedRecord));
     }
 
     // 2. Bind current device (AC5)
-    if (student?.id) {
-      const currentDeviceId = getOrCreateDeviceId();
+    if (savedRecord?.id) {
       await supabase.from('student_devices').insert({
-        student_id: student.id,
+        student_id: savedRecord.id,
         device_id: currentDeviceId,
         status: 'active',
       });
     }
 
-    return student;
+    return savedRecord;
   } catch (err) {
-    console.warn('Supabase save failed:', err);
-    return null;
+    console.warn('Supabase save failed, persisted locally:', err);
+    return localRecord;
   }
 }
 
