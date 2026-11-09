@@ -183,9 +183,6 @@ export const GateScanLogsCard: React.FC<GateScanLogsCardProps> = ({
         <CardTitle className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
           <span>Student Scan Logs</span>
         </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Real-time record of students cleared at {department} ({stationCode}).
-        </p>
 
         {/* Search & Filter Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
@@ -317,15 +314,12 @@ export const GateScanLogsCard: React.FC<GateScanLogsCardProps> = ({
         ) : logs.length === 0 ? (
           /* Empty State when no scans recorded yet */
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-border rounded-xl bg-muted/10 my-auto">
-            <div className="size-11 rounded-full bg-muted/50 border border-border flex items-center justify-center text-muted-foreground mb-3">
+            <div className="size-11 rounded-full bg-muted/50 border border-border flex items-center justify-center text-muted-foreground mb-2">
               <FileSpreadsheet className="size-5" />
             </div>
             <h3 className="text-sm font-semibold text-foreground">
               No Scanned Students Yet
             </h3>
-            <p className="text-xs text-muted-foreground max-w-xs mt-1">
-              When students present their QR passes and are approved at this terminal, their attendance logs will appear here in real-time.
-            </p>
           </div>
         ) : (
           /* Filter returned no results */

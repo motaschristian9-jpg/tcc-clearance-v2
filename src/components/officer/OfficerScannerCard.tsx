@@ -4,7 +4,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,8 +33,8 @@ import {
   XCircle,
   ScanLine,
   UserCheck,
-  AlertCircle,
   BadgeCheck,
+  QrCode,
 } from 'lucide-react';
 
 interface OfficerScannerCardProps {
@@ -203,8 +202,9 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
             </span>
           </div>
 
-          <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
-            {officer.department} Event Clearance
+          <CardTitle className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <ScanLine className="size-5 text-primary shrink-0" />
+            <span>{officer.department} Event Clearance</span>
           </CardTitle>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
             <BadgeCheck className="size-3.5 text-primary shrink-0" />
@@ -365,15 +365,26 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                 className="w-full h-full object-cover"
               />
 
-              {/* Targeting Reticle */}
-              <div className="absolute inset-8 border border-foreground/30 rounded-lg pointer-events-none flex items-center justify-center">
-                <div className="w-full h-0.5 bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+              {/* Targeting Reticle with Corner Brackets & Scanner Pulse */}
+              <div className="absolute inset-7 pointer-events-none flex flex-col justify-between">
+                <div className="flex justify-between w-full">
+                  <div className="size-4 border-t-2 border-l-2 border-emerald-500 rounded-tl" />
+                  <div className="size-4 border-t-2 border-r-2 border-emerald-500 rounded-tr" />
+                </div>
+
+                <div className="w-full h-0.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+
+                <div className="flex justify-between w-full">
+                  <div className="size-4 border-b-2 border-l-2 border-emerald-500 rounded-bl" />
+                  <div className="size-4 border-b-2 border-r-2 border-emerald-500 rounded-br" />
+                </div>
               </div>
 
-              {/* Aiming guide */}
-              <div className="absolute bottom-2 left-0 right-0 text-center">
-                <span className="text-[10px] text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full border border-border">
-                  Align student QR pass inside box
+              {/* Aiming guide with scanner icon */}
+              <div className="absolute bottom-2.5 left-0 right-0 text-center flex justify-center">
+                <span className="inline-flex items-center gap-1.5 text-[10px] text-foreground font-medium bg-background/85 backdrop-blur-xs px-2.5 py-1 rounded-full border border-border shadow-xs">
+                  <QrCode className="size-3 text-emerald-500 shrink-0" />
+                  <span>Align student QR pass inside box</span>
                 </span>
               </div>
             </div>
@@ -391,22 +402,9 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                 <ScanLine className="size-3.5 text-foreground" />
                 <span>Simulate Scan Current Student QR</span>
               </Button>
-              <p className="text-center text-[10px] text-muted-foreground pt-1.5">
-                Tests officer face cross-check and slot stamp verification.
-              </p>
             </div>
           )}
         </CardContent>
-
-        <CardFooter className="flex flex-col gap-2 pt-2 border-t border-border/60">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground w-full">
-            <span className="flex items-center gap-1.5">
-              <AlertCircle className="size-3.5 text-muted-foreground" />
-              <span>Offline ECDSA verification</span>
-            </span>
-            <span className="font-mono">TCC SBO v1.0</span>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );

@@ -167,14 +167,23 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Intramurals Attendance Records for Clearance Card Matrix
-  const [attendanceRecords, setAttendanceRecords] = useState<DayAttendance[]>([
-    { day: 'Day 1', date: 'Nov 10', slots: {}, cleared: false },
-    { day: 'Day 2', date: 'Nov 11', slots: {}, cleared: false },
-    { day: 'Day 3', date: 'Nov 12', slots: {}, cleared: false },
-    { day: 'Day 4', date: 'Nov 13', slots: {}, cleared: false },
-    { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
-  ]);
+  // Intramurals Attendance Records for Clearance Card Matrix (persisted across sessions)
+  const [attendanceRecords, setAttendanceRecords] = useState<DayAttendance[]>(() => {
+    try {
+      const saved = localStorage.getItem('TCC_ATTENDANCE_RECORDS');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [
+      { day: 'Day 1', date: 'Nov 10', slots: {}, cleared: false },
+      { day: 'Day 2', date: 'Nov 11', slots: {}, cleared: false },
+      { day: 'Day 3', date: 'Nov 12', slots: {}, cleared: false },
+      { day: 'Day 4', date: 'Nov 13', slots: {}, cleared: false },
+      { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
+    ];
+  });
 
   // SBO Officer attendance stamping handler with officer signatory audit
   const handleOfficerApproveAttendance = async (
@@ -186,8 +195,8 @@ export const App: React.FC = () => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    setAttendanceRecords((prev) =>
-      prev.map((rec) => {
+    setAttendanceRecords((prev) => {
+      const updated = prev.map((rec) => {
         if (rec.day === day) {
           const newSlots = { ...rec.slots, [slot]: timeStr };
           const newOfficers = {
@@ -213,8 +222,12 @@ export const App: React.FC = () => {
           };
         }
         return rec;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('TCC_ATTENDANCE_RECORDS', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     // Save attendance stamp to Supabase with officer audit
     const supabase = getSupabase();
