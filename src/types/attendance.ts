@@ -63,3 +63,25 @@ export interface ScannedStudentPayload {
   deviceKeyValid: boolean;
 }
 
+export interface GateScanLogEntry {
+  id: string;
+  studentName: string;
+  schoolId: string;
+  department: string;
+  section: string;
+  photoDataUrl?: string | null;
+  day: EventDay;
+  slot: TimeSlotType;
+  slotLabel: string;
+  timestamp: number;
+  timeFormatted: string;
+  dateFormatted: string;
+  stampedBy: {
+    officerName: string;
+    position: string;
+    department: string;
+    stationCode: string;
+  };
+}
+
+

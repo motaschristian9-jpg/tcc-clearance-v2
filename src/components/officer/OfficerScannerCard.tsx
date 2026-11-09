@@ -47,7 +47,12 @@ interface OfficerScannerCardProps {
     section: string;
     photoDataUrl: string | null;
   };
-  onApproveAttendance: (day: EventDay, slot: TimeSlotType, officer: SboOfficerSession) => void;
+  onApproveAttendance: (
+    day: EventDay,
+    slot: TimeSlotType,
+    officer: SboOfficerSession,
+    scannedStudent?: ScannedStudentPayload
+  ) => void;
 }
 
 export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
@@ -165,7 +170,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   const handleApprove = () => {
     if (!scannedResult) return;
 
-    onApproveAttendance(selectedDay, selectedSlot, officer);
+    onApproveAttendance(selectedDay, selectedSlot, officer, scannedResult);
     const activeSlotLabel = TIME_SLOTS.find((s) => s.id === selectedSlot)?.label || 'Slot';
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

@@ -45,7 +45,12 @@ import {
 import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, Lock } from 'lucide-react';
 import { SboSignInCard } from '@/components/officer/SboSignInCard';
 import { SboTerminalScreen } from '@/components/officer/SboTerminalScreen';
-import { EventDay, TimeSlotType, SboOfficerSession } from '@/types/attendance';
+import {
+  EventDay,
+  TimeSlotType,
+  SboOfficerSession,
+  ScannedStudentPayload,
+} from '@/types/attendance';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -175,7 +180,8 @@ export const App: React.FC = () => {
   const handleOfficerApproveAttendance = async (
     day: EventDay,
     slot: TimeSlotType,
-    officer: SboOfficerSession
+    officer: SboOfficerSession,
+    _scannedStudent?: ScannedStudentPayload
   ) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
