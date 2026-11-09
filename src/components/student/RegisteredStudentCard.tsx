@@ -31,7 +31,7 @@ export const RegisteredStudentCard: React.FC<RegisteredStudentCardProps> = ({
   onSignOut,
 }) => {
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-sm mx-auto my-auto py-6">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-center pb-4">
           <div className="flex justify-center mb-2">
@@ -113,7 +113,7 @@ export const RegisteredStudentCard: React.FC<RegisteredStudentCardProps> = ({
           </Button>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };
 

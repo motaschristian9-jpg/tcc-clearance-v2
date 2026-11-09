@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { OfficerScannerCard } from './OfficerScannerCard';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, LogOut, ArrowLeft, Users } from 'lucide-react';
-import { EventDay, TimeSlotType } from '@/types/attendance';
+import { ShieldCheck, LogOut, ArrowLeft, Users, UserCheck } from 'lucide-react';
+import { EventDay, TimeSlotType, SboOfficerSession } from '@/types/attendance';
 import { toast } from 'sonner';
 
 interface SboTerminalScreenProps {
-  officer: {
-    id: string;
-    email: string;
-    name: string;
-    department: string;
-    role: 'officer' | 'head';
-  };
+  officer: SboOfficerSession;
   currentStudent: {
     fullName: string;
     schoolId: string;
@@ -20,7 +14,7 @@ interface SboTerminalScreenProps {
     section: string;
     photoDataUrl: string | null;
   };
-  onApproveAttendance: (day: EventDay, slot: TimeSlotType) => void;
+  onApproveAttendance: (day: EventDay, slot: TimeSlotType, officer: SboOfficerSession) => void;
   onLockTerminal: () => void;
   onExitToStudentPortal: () => void;
 }
@@ -34,11 +28,11 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
 }) => {
   const [stampedCount, setStampedCount] = useState<number>(0);
 
-  const handleApproveWithCount = (day: EventDay, slot: TimeSlotType) => {
-    onApproveAttendance(day, slot);
+  const handleApproveWithCount = (day: EventDay, slot: TimeSlotType, currentOfficer: SboOfficerSession) => {
+    onApproveAttendance(day, slot, currentOfficer);
     setStampedCount((prev) => prev + 1);
-    toast.success('Clearance Stamp Recorded', {
-      description: `${currentStudent.fullName || 'Student'} stamped for ${day} (${slot}).`,
+    toast.success('Clearance Stamp Stored', {
+      description: `${currentStudent.fullName || 'Student'} stamped for ${day} (${slot}) by ${currentOfficer.name} (${currentOfficer.position}).`,
     });
   };
 
@@ -52,14 +46,19 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-foreground">SBO Gate Terminal</span>
+              <span className="text-xs font-semibold text-foreground">
+                {officer.department} SBO Gate Terminal
+              </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
-                Active Duty
+                {officer.stationCode} Active
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground">
-              Officer: <span className="font-medium text-foreground">{officer.name}</span> ({officer.department})
-            </span>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <UserCheck className="size-3 text-primary" />
+              <span>
+                Officer: <strong className="font-medium text-foreground">{officer.name}</strong> · {officer.position}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -98,6 +97,7 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
       {/* Main Scanner Card Component */}
       <div className="flex-1 flex items-center justify-center">
         <OfficerScannerCard
+          officer={officer}
           currentStudent={currentStudent}
           onApproveAttendance={handleApproveWithCount}
         />
@@ -105,3 +105,5 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
     </div>
   );
 };
+
+export default SboTerminalScreen;

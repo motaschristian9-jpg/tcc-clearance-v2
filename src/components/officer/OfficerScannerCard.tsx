@@ -3,7 +3,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
@@ -27,6 +26,7 @@ import {
   TimeSlotType,
   TIME_SLOTS,
   ScannedStudentPayload,
+  SboOfficerSession,
 } from '@/types/attendance';
 import {
   CheckCircle2,
@@ -35,9 +35,11 @@ import {
   ScanLine,
   UserCheck,
   AlertCircle,
+  BadgeCheck,
 } from 'lucide-react';
 
 interface OfficerScannerCardProps {
+  officer: SboOfficerSession;
   currentStudent: {
     fullName: string;
     schoolId: string;
@@ -45,10 +47,11 @@ interface OfficerScannerCardProps {
     section: string;
     photoDataUrl: string | null;
   };
-  onApproveAttendance: (day: EventDay, slot: TimeSlotType) => void;
+  onApproveAttendance: (day: EventDay, slot: TimeSlotType, officer: SboOfficerSession) => void;
 }
 
 export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
+  officer,
   currentStudent,
   onApproveAttendance,
 }) => {
@@ -115,13 +118,13 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   const handleApprove = () => {
     if (!scannedResult) return;
 
-    onApproveAttendance(selectedDay, selectedSlot);
+    onApproveAttendance(selectedDay, selectedSlot, officer);
     const activeSlotLabel = TIME_SLOTS.find((s) => s.id === selectedSlot)?.label || 'Slot';
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     setLastApprovedMsg(
-      `✓ ${scannedResult.fullName} cleared for ${selectedDay} ${activeSlotLabel} at ${timeStr}`
+      `✓ ${scannedResult.fullName} cleared for ${selectedDay} ${activeSlotLabel} by ${officer.name} (${officer.position}) at ${timeStr}`
     );
 
     // Reset scanner for next student
@@ -135,25 +138,28 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   };
 
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-4">
+    <div className="w-full max-w-sm mx-auto my-auto py-4">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-left pb-3">
           <div className="flex items-center justify-between pb-1">
             <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
-              SBO Officer Portal
+              {officer.department} SBO Terminal
             </span>
             <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
               <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-              Scanner Ready
+              {officer.stationCode} Ready
             </span>
           </div>
 
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
-            CIT Intramurals 2026
+            {officer.department} Event Clearance
           </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">
-            Scan and verify student attendance passes for clearance stamps.
-          </CardDescription>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
+            <BadgeCheck className="size-3.5 text-primary shrink-0" />
+            <span className="truncate">
+              Signatory: <strong className="text-foreground font-medium">{officer.name}</strong> ({officer.position})
+            </span>
+          </div>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3.5 text-xs text-left">
@@ -258,12 +264,20 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
 
               <Separator />
 
-              {/* Slot Stamping Confirmation Target */}
-              <div className="border border-border rounded-lg p-2.5 bg-muted/20 text-xs flex items-center justify-between">
-                <span className="text-muted-foreground text-[11px]">Stamping clearance for:</span>
-                <span className="font-semibold text-foreground text-[11px]">
-                  {selectedDay} · {TIME_SLOTS.find((s) => s.id === selectedSlot)?.label}
-                </span>
+              {/* Slot Stamping Confirmation Target with Signatory info */}
+              <div className="border border-border rounded-lg p-2.5 bg-muted/20 text-xs flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-[11px]">Clearance slot:</span>
+                  <span className="font-semibold text-foreground text-[11px]">
+                    {selectedDay} · {TIME_SLOTS.find((s) => s.id === selectedSlot)?.label}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/50">
+                  <span className="text-muted-foreground">Signatory:</span>
+                  <span className="font-medium text-foreground font-mono text-[11px] truncate max-w-[200px]">
+                    {officer.name} ({officer.position})
+                  </span>
+                </div>
               </div>
 
               {/* Approval Actions (Large 48px Touch Targets for field speed) */}
@@ -342,6 +356,6 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
           </div>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };

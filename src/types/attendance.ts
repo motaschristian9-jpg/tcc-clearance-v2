@@ -19,6 +19,14 @@ export const TIME_SLOTS: TimeSlotConfig[] = [
   { id: 'afternoon-out', label: 'Afternoon Out', timeWindow: '04:30 PM - 05:30 PM' },
 ];
 
+export interface SlotStampInfo {
+  time: string;
+  officerName: string;
+  officerPosition: string;
+  department: string;
+  stationCode: string;
+}
+
 export interface DayAttendance {
   day: EventDay;
   date: string;
@@ -28,7 +36,21 @@ export interface DayAttendance {
     'afternoon-in'?: string;
     'afternoon-out'?: string;
   };
+  slotOfficers?: {
+    'morning-in'?: SlotStampInfo;
+    'morning-out'?: SlotStampInfo;
+    'afternoon-in'?: SlotStampInfo;
+    'afternoon-out'?: SlotStampInfo;
+  };
   cleared: boolean;
+}
+
+export interface SboOfficerSession {
+  name: string;
+  position: string;
+  department: string;
+  stationCode: string;
+  loginTime?: string;
 }
 
 export interface ScannedStudentPayload {

@@ -60,7 +60,7 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
   };
 
   return (
-    <main className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-sm mx-auto my-auto py-6">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto size-10 rounded-full border border-border bg-muted/20 flex items-center justify-center mb-2">
@@ -177,7 +177,7 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
           </Button>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 };
 

@@ -10,119 +10,124 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { ShieldCheck, KeyRound, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { ShieldCheck, Lock, ArrowLeft, Loader2, KeyRound, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getSupabase } from '@/lib/supabase';
+import { TCC_DEPARTMENTS } from '@/types/student';
+import { SboOfficerSession } from '@/types/attendance';
 
 interface SboSignInCardProps {
-  onOfficerAuthenticated: (officer: {
-    id: string;
-    email: string;
-    name: string;
-    department: string;
-    role: 'officer' | 'head';
-  }) => void;
+  onOfficerAuthenticated: (officer: SboOfficerSession) => void;
   onBackToStudentPortal: () => void;
 }
 
-// Master gate passcodes for emergency/fast offline gate stations
-const DEFAULT_GATE_PASSCODES = ['SBO-CIT-2026', 'TCC-SBO-GATE', '20261373'];
+// Preset officer positions for fast selection
+const OFFICER_POSITIONS = [
+  'Attendance Committee Head',
+  'Gate Marshal',
+  'SBO President',
+  'SBO Vice President',
+  'SBO Secretary',
+  'SBO Auditor',
+  'Year Level Representative',
+  'Custom / Other',
+];
 
 export const SboSignInCard: React.FC<SboSignInCardProps> = ({
   onOfficerAuthenticated,
   onBackToStudentPortal,
 }) => {
-  const [authMode, setAuthMode] = useState<'passcode' | 'account'>('passcode');
-  const [passcode, setPasscode] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [officerName, setOfficerName] = useState('CIT SBO Officer');
-  const [isLoading, setIsLoading] = useState(false);
+  const [department, setDepartment] = useState<string>('CIT');
+  const [officerName, setOfficerName] = useState<string>('');
+  const [selectedPosition, setSelectedPosition] = useState<string>('Attendance Committee Head');
+  const [customPosition, setCustomPosition] = useState<string>('');
+  const [passcode, setPasscode] = useState<string>('sbo1');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // 1. Passcode Quick Terminal Unlock (for gate duty phones)
-  const handlePasscodeSubmit = (e: React.FormEvent) => {
+  const effectivePosition = selectedPosition === 'Custom / Other'
+    ? (customPosition.trim() || 'SBO Officer')
+    : selectedPosition;
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passcode.trim()) return;
+
+    if (!officerName.trim()) {
+      toast.error('Officer Name Required', {
+        description: 'Please enter your full name for the attendance stamping signature.',
+      });
+      return;
+    }
+
+    if (!passcode.trim()) {
+      toast.error('Passcode Required', {
+        description: 'Please enter your department station passcode (e.g. sbo1, sbo2, sbo3, sbo4).',
+      });
+      return;
+    }
 
     setIsLoading(true);
+
     setTimeout(() => {
       setIsLoading(false);
-      const cleanCode = passcode.trim().toUpperCase();
 
-      if (DEFAULT_GATE_PASSCODES.includes(cleanCode) || cleanCode === 'SBO2026') {
-        toast.success('SBO Terminal Unlocked', {
-          description: `Welcome, ${officerName}. Gate attendance terminal is now active.`,
-        });
-        onOfficerAuthenticated({
-          id: 'sbo-officer-gate',
-          email: 'sbo.officer@tcc.edu.ph',
-          name: officerName,
-          department: 'CIT',
-          role: 'officer',
-        });
-      } else {
-        toast.error('Invalid Officer Passcode', {
-          description: 'The gate passcode entered does not match authorized credentials.',
-        });
-      }
-    }, 600);
-  };
+      const cleanCode = passcode.trim().toLowerCase();
+      const deptCode = department.toLowerCase();
 
-  // 2. Email & Password Account Login via Supabase
-  const handleAccountSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password) return;
+      // Check valid passcodes: sbo1..sbo4, {dept}-sbo1..4, or master gate bypass
+      const validCodes = [
+        'sbo1',
+        'sbo2',
+        'sbo3',
+        'sbo4',
+        `${deptCode}-sbo1`,
+        `${deptCode}-sbo2`,
+        `${deptCode}-sbo3`,
+        `${deptCode}-sbo4`,
+        'sbo2026',
+        'tcc-sbo-gate',
+        '20261373',
+      ];
 
-    setIsLoading(true);
-    try {
-      const supabase = getSupabase();
-      if (!supabase) {
-        throw new Error('Supabase client unavailable');
-      }
+      const isValid = validCodes.includes(cleanCode);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error || !data.user) {
-        toast.error('Authentication Failed', {
-          description: error?.message || 'Invalid officer credentials.',
+      if (!isValid) {
+        toast.error('Invalid Station Passcode', {
+          description: `"${passcode}" is not an authorized passcode for ${department}. Authorized accounts: sbo1, sbo2, sbo3, sbo4.`,
         });
         return;
       }
 
-      // Query officer role from profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      // Determine station code label
+      let stationCode = 'SBO 1';
+      if (cleanCode.includes('2')) stationCode = 'SBO 2';
+      else if (cleanCode.includes('3')) stationCode = 'SBO 3';
+      else if (cleanCode.includes('4')) stationCode = 'SBO 4';
+      else if (cleanCode.includes('1')) stationCode = 'SBO 1';
 
-      const role = profile?.role || 'officer';
+      const officerSession: SboOfficerSession = {
+        name: officerName.trim(),
+        position: effectivePosition,
+        department,
+        stationCode: `${department}-${stationCode.replace(/\s+/g, '')}`,
+        loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
 
-      toast.success('Officer Session Verified', {
-        description: `Authenticated as ${profile?.full_name || data.user.email}.`,
+      toast.success('Gate Terminal Unlocked', {
+        description: `Welcome, ${officerSession.name} (${officerSession.position} - ${department}). Gate terminal is active.`,
       });
 
-      onOfficerAuthenticated({
-        id: data.user.id,
-        email: data.user.email || '',
-        name: profile?.full_name || 'SBO Officer',
-        department: 'CIT',
-        role: role as 'officer' | 'head',
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unknown login error';
-      toast.error('Sign In Error', { description: msg });
-    } finally {
-      setIsLoading(false);
-    }
+      onOfficerAuthenticated(officerSession);
+    }, 450);
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto my-auto py-6">
+    <div className="w-full max-w-md mx-auto my-auto py-6">
       <Card className="border border-border/80 shadow-xl bg-card">
         <CardHeader className="text-center pb-4 pt-6">
           <div className="mx-auto size-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-3 shadow-xs">
@@ -131,165 +136,174 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
 
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-muted text-muted-foreground border border-border mx-auto mb-1">
             <Lock className="size-3" />
-            <span>Restricted Gateway</span>
+            <span>Restricted Gateway · SBO Personnel</span>
           </div>
 
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
-            SBO Officer Portal
+            SBO Gate Terminal
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Student Body Organization · Event Gate Terminal
+            Sign in with your department station code to stamp student clearances.
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          {/* Auth Mode Toggle */}
-          <div className="grid grid-cols-2 p-1 rounded-lg border border-border bg-muted/30 text-xs">
-            <button
-              type="button"
-              onClick={() => setAuthMode('passcode')}
-              className={`py-1.5 text-[11px] font-medium rounded-md transition-all cursor-pointer ${
-                authMode === 'passcode'
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Gate Passcode
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode('account')}
-              className={`py-1.5 text-[11px] font-medium rounded-md transition-all cursor-pointer ${
-                authMode === 'account'
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Officer Account
-            </button>
-          </div>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {/* Department Selection */}
+            <div className="space-y-1.5">
+              <Label htmlFor="sbo-dept" className="text-xs font-medium">
+                Department / College
+              </Label>
+              <Select value={department} onValueChange={setDepartment}>
+                <SelectTrigger id="sbo-dept" className="h-9 text-xs">
+                  <SelectValue placeholder="Select Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TCC_DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.code} value={dept.code}>
+                      <span className="font-semibold">{dept.code}</span> · {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {authMode === 'passcode' ? (
-            <form onSubmit={handlePasscodeSubmit} className="space-y-3.5">
-              <div className="space-y-1.5 text-left">
-                <Label htmlFor="gate-passcode" className="text-xs font-medium">
-                  Gate Terminal Passcode
-                </Label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                  <Input
-                    id="gate-passcode"
-                    type="password"
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    placeholder="Enter gate key (e.g. SBO-CIT-2026)"
-                    className="pl-9 h-10 text-xs font-mono"
-                    autoFocus
-                    required
-                  />
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Default Demo Key: <span className="font-mono font-medium text-foreground">SBO-CIT-2026</span>
-                </p>
-              </div>
-
-              <div className="space-y-1.5 text-left">
-                <Label htmlFor="officer-name" className="text-xs font-medium">
-                  Officer on Duty Label
-                </Label>
+            {/* Officer Full Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="officer-name" className="text-xs font-medium">
+                Officer Full Name
+              </Label>
+              <div className="relative">
                 <Input
                   id="officer-name"
-                  type="text"
+                  placeholder="e.g. Maria Santos or Christian Motas"
                   value={officerName}
                   onChange={(e) => setOfficerName(e.target.value)}
-                  placeholder="e.g. CIT SBO Officer"
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading || !passcode.trim()}
-                className="w-full h-10 text-xs font-semibold gap-2 cursor-pointer shadow-xs"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    <span>Verifying Terminal...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="size-4" />
-                    <span>Unlock Gate Scanner</span>
-                  </>
-                )}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleAccountSubmit} className="space-y-3">
-              <div className="space-y-1.5 text-left">
-                <Label htmlFor="officer-email" className="text-xs font-medium">
-                  Officer Email
-                </Label>
-                <Input
-                  id="officer-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="officer@tcc.edu.ph"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs pr-8"
                   required
                 />
+                <UserCheck className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Your name will appear as the signatory on cleared student passes.
+              </p>
+            </div>
+
+            {/* Officer Position / Role */}
+            <div className="space-y-1.5">
+              <Label htmlFor="officer-pos" className="text-xs font-medium">
+                SBO Position / Role
+              </Label>
+              <Select value={selectedPosition} onValueChange={setSelectedPosition}>
+                <SelectTrigger id="officer-pos" className="h-9 text-xs">
+                  <SelectValue placeholder="Select Position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OFFICER_POSITIONS.map((pos) => (
+                    <SelectItem key={pos} value={pos}>
+                      {pos}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {selectedPosition === 'Custom / Other' && (
+                <Input
+                  placeholder="Specify position (e.g. 3rd Year Representative)"
+                  value={customPosition}
+                  onChange={(e) => setCustomPosition(e.target.value)}
+                  className="h-8 text-xs mt-2"
+                  autoFocus
+                />
+              )}
+            </div>
+
+            {/* Station Passcode Selection & Input */}
+            <div className="space-y-2 pt-1 border-t border-border/60">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="sbo-passcode" className="text-xs font-medium">
+                  Department Station Passcode
+                </Label>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  4 Stations Available
+                </span>
               </div>
 
-              <div className="space-y-1.5 text-left">
-                <Label htmlFor="officer-password" className="text-xs font-medium">
-                  Password
-                </Label>
+              {/* Quick Station Selection Buttons */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['sbo1', 'sbo2', 'sbo3', 'sbo4'] as const).map((code, idx) => {
+                  const isSelected = passcode.toLowerCase() === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setPasscode(code)}
+                      className={`py-1.5 px-2 rounded-md border text-center text-xs font-mono font-medium transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                          : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                      }`}
+                    >
+                      <span className="block text-[11px]">SBO {idx + 1}</span>
+                      <span className="text-[9px] opacity-75">{code}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Passcode manual input */}
+              <div className="relative pt-1">
                 <Input
-                  id="officer-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-9 text-xs"
+                  id="sbo-passcode"
+                  type="text"
+                  placeholder="e.g. sbo1, sbo2, sbo3, sbo4"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  className="h-9 text-xs font-mono pr-8"
                   required
                 />
+                <KeyRound className="size-3.5 absolute right-2.5 top-[calc(50%+2px)] -translate-y-1/2 text-muted-foreground pointer-events-none" />
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                Each department has 4 authorized codes (<code className="font-mono text-foreground font-semibold">sbo1</code>, <code className="font-mono text-foreground font-semibold">sbo2</code>, <code className="font-mono text-foreground font-semibold">sbo3</code>, <code className="font-mono text-foreground font-semibold">sbo4</code>).
+              </p>
+            </div>
+          </CardContent>
 
-              <Button
-                type="submit"
-                disabled={isLoading || !email.trim() || !password}
-                className="w-full h-10 text-xs font-semibold gap-2 cursor-pointer shadow-xs mt-1"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    <span>Authenticating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="size-3.5" />
-                    <span>Sign In to Terminal</span>
-                  </>
-                )}
-              </Button>
-            </form>
-          )}
-        </CardContent>
+          <CardFooter className="flex flex-col gap-2.5 pt-2">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-10 text-xs font-medium gap-2 cursor-pointer shadow-xs"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="size-4" />
+                  <span>Unlock Gate Terminal</span>
+                </>
+              )}
+            </Button>
 
-        <CardFooter className="pt-1 pb-4 flex flex-col gap-2">
-          <Separator />
-          <button
-            type="button"
-            onClick={onBackToStudentPortal}
-            className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>Return to Student Portal</span>
-          </button>
-        </CardFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onBackToStudentPortal}
+              className="w-full h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer gap-1.5"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Return to Student View</span>
+            </Button>
+          </CardFooter>
+        </form>
       </Card>
     </div>
   );
 };
+
+export default SboSignInCard;

@@ -141,65 +141,45 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
               <Separator />
 
               <CardContent className="p-3.5 space-y-2.5 flex-1">
-                {/* Morning In */}
-                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Morning In</span>
-                    {item.slots['morning-in'] ? (
-                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="size-3" />
-                        {item.slots['morning-in']}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
-                    )}
-                  </div>
-                </div>
+                {(
+                  [
+                    { label: 'Morning In', key: 'morning-in' as const },
+                    { label: 'Morning Out', key: 'morning-out' as const },
+                    { label: 'Afternoon In', key: 'afternoon-in' as const },
+                    { label: 'Afternoon Out', key: 'afternoon-out' as const },
+                  ] as const
+                ).map(({ label, key }) => {
+                  const stampTime = item.slots[key];
+                  const officer = item.slotOfficers?.[key];
 
-                {/* Morning Out */}
-                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Morning Out</span>
-                    {item.slots['morning-out'] ? (
-                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="size-3" />
-                        {item.slots['morning-out']}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
-                    )}
-                  </div>
-                </div>
+                  return (
+                    <div key={key} className="p-2 rounded-md border border-border/70 bg-card space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">{label}</span>
+                        {stampTime ? (
+                          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="size-3" />
+                            {stampTime}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
+                        )}
+                      </div>
 
-                {/* Afternoon In */}
-                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Afternoon In</span>
-                    {item.slots['afternoon-in'] ? (
-                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="size-3" />
-                        {item.slots['afternoon-in']}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Afternoon Out */}
-                <div className="p-2 rounded-md border border-border/70 bg-card space-y-0.5">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Afternoon Out</span>
-                    {item.slots['afternoon-out'] ? (
-                      <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="size-3" />
-                        {item.slots['afternoon-out']}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/60 font-mono text-[10px]">Pending</span>
-                    )}
-                  </div>
-                </div>
+                      {/* Stamped By Officer Signature */}
+                      {officer && (
+                        <div className="text-[9px] text-muted-foreground pt-1 border-t border-border/40 flex items-center justify-between gap-1">
+                          <span className="truncate">
+                            By: <strong className="text-foreground font-medium">{officer.officerName}</strong>
+                          </span>
+                          <span className="font-mono text-[8.5px] opacity-75 shrink-0">
+                            {officer.officerPosition}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </CardContent>
 
               <CardFooter className="p-3 pt-0 text-[10px] text-muted-foreground border-t border-border/40 mt-auto flex items-center justify-between">

@@ -46,7 +46,7 @@ import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, ArrowLeft, Loc
 import { Button } from '@/components/ui/button';
 import { SboSignInCard } from '@/components/officer/SboSignInCard';
 import { SboTerminalScreen } from '@/components/officer/SboTerminalScreen';
-import { EventDay, TimeSlotType } from '@/types/attendance';
+import { EventDay, TimeSlotType, SboOfficerSession } from '@/types/attendance';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -73,13 +73,7 @@ export const App: React.FC = () => {
 
   // Hidden SBO Officer Portal state
   const [isSboPortal, setIsSboPortal] = useState<boolean>(() => checkIsSboRoute());
-  const [sboOfficer, setSboOfficer] = useState<{
-    id: string;
-    email: string;
-    name: string;
-    department: string;
-    role: 'officer' | 'head';
-  } | null>(() => {
+  const [sboOfficer, setSboOfficer] = useState<SboOfficerSession | null>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('TCC_SBO_OFFICER');
       if (cached) {
@@ -178,8 +172,12 @@ export const App: React.FC = () => {
     { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
   ]);
 
-  // SBO Officer attendance stamping handler
-  const handleOfficerApproveAttendance = async (day: EventDay, slot: TimeSlotType) => {
+  // SBO Officer attendance stamping handler with officer signatory audit
+  const handleOfficerApproveAttendance = async (
+    day: EventDay,
+    slot: TimeSlotType,
+    officer: SboOfficerSession
+  ) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -187,18 +185,33 @@ export const App: React.FC = () => {
       prev.map((rec) => {
         if (rec.day === day) {
           const newSlots = { ...rec.slots, [slot]: timeStr };
+          const newOfficers = {
+            ...(rec.slotOfficers || {}),
+            [slot]: {
+              time: timeStr,
+              officerName: officer.name,
+              officerPosition: officer.position,
+              department: officer.department,
+              stationCode: officer.stationCode,
+            },
+          };
           const allFour =
             newSlots['morning-in'] &&
             newSlots['morning-out'] &&
             newSlots['afternoon-in'] &&
             newSlots['afternoon-out'];
-          return { ...rec, slots: newSlots, cleared: !!allFour };
+          return {
+            ...rec,
+            slots: newSlots,
+            slotOfficers: newOfficers,
+            cleared: !!allFour,
+          };
         }
         return rec;
       })
     );
 
-    // Save attendance stamp to Supabase
+    // Save attendance stamp to Supabase with officer audit
     const supabase = getSupabase();
     if (supabase && studentDbId) {
       try {
@@ -207,6 +220,7 @@ export const App: React.FC = () => {
           method: 'qr',
           status: 'valid',
           scanned_at: new Date().toISOString(),
+          serial_no: `${officer.department}-${officer.stationCode}-${Date.now().toString(36).toUpperCase()}`,
         });
       } catch (err) {
         console.warn('Attendance sync note:', err);
