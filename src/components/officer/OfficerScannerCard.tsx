@@ -101,10 +101,10 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   // Handle simulated / mock QR scan of current student pass
   const handleSimulateScan = () => {
     setScannedResult({
-      fullName: currentStudent.fullName || 'Alexander M. Cruz',
-      schoolId: currentStudent.schoolId || '20241373',
+      fullName: currentStudent.fullName || 'Student',
+      schoolId: currentStudent.schoolId || '---',
       department: currentStudent.department || 'CIT',
-      section: currentStudent.section || '3A',
+      section: currentStudent.section || '---',
       photoDataUrl: currentStudent.photoDataUrl,
       timestamp: Date.now(),
       deviceKeyValid: true,

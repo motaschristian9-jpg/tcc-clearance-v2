@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
 import {
   Card,
   CardHeader,
@@ -29,6 +30,35 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
   onViewActivityCard,
   onBackToDashboard,
 }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    // Time-bucketed token refreshing every 30 seconds
+    const timeBucket = Math.floor(Date.now() / 30000) * 30000;
+    const passPayload = JSON.stringify({
+      tcc_id: schoolId,
+      name: fullName,
+      dept: department,
+      sec: section,
+      epoch: timeBucket,
+      v: 1,
+    });
+
+    QRCode.toCanvas(canvasRef.current, passPayload, {
+      width: 208,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+      errorCorrectionLevel: 'M',
+    }).catch((err) => {
+      console.warn('Failed to render pass QR code canvas:', err);
+    });
+  }, [schoolId, fullName, department, section, passCountdown]);
+
   return (
     <div className="w-full max-w-md mx-auto py-4">
       <Card className="border border-border shadow-sm">
@@ -60,59 +90,13 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
         </CardHeader>
 
         <CardContent className="flex flex-col items-center gap-4 text-center">
-          {/* Dynamic 30s QR Display */}
+          {/* Dynamic 30s Real Scannable QR Display */}
           <div className="relative p-4 rounded-xl border border-border bg-white shadow-sm flex flex-col items-center">
-            {/* Visual SVG QR representation */}
-            <div className="size-52 bg-white flex items-center justify-center relative p-2">
-              <svg viewBox="0 0 100 100" className="size-full">
-                <rect width="100" height="100" fill="white" />
-                {/* Outer positioning markers */}
-                <rect x="5" y="5" width="28" height="28" fill="black" />
-                <rect x="9" y="9" width="20" height="20" fill="white" />
-                <rect x="13" y="13" width="12" height="12" fill="black" />
-
-                <rect x="67" y="5" width="28" height="28" fill="black" />
-                <rect x="71" y="9" width="20" height="20" fill="white" />
-                <rect x="75" y="13" width="12" height="12" fill="black" />
-
-                <rect x="5" y="67" width="28" height="28" fill="black" />
-                <rect x="9" y="71" width="20" height="20" fill="white" />
-                <rect x="13" y="75" width="12" height="12" fill="black" />
-
-                {/* Simulated dynamic bit matrix blocks based on countdown */}
-                <rect x="38" y="10" width="8" height="8" fill="black" />
-                <rect x="48" y="18" width="6" height="6" fill="black" />
-                <rect x="40" y="28" width="12" height="6" fill="black" />
-                <rect x="56" y="28" width="6" height="8" fill="black" />
-
-                <rect x="12" y="38" width="8" height="12" fill="black" />
-                <rect x="24" y="42" width="6" height="6" fill="black" />
-                <rect x="38" y="40" width="24" height="20" fill="black" />
-                <rect x="68" y="38" width="10" height="14" fill="black" />
-                <rect x="82" y="44" width="8" height="10" fill="black" />
-
-                <rect x="38" y="66" width="10" height="10" fill="black" />
-                <rect x="54" y="68" width="8" height="8" fill="black" />
-                <rect x="46" y="80" width="18" height="12" fill="black" />
-                <rect x="70" y="76" width="16" height="10" fill="black" />
-
-                {/* Center logo badge */}
-                <rect x="44" y="44" width="12" height="12" fill="white" />
-                <text
-                  x="50"
-                  y="52"
-                  fontSize="6"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                  fill="black"
-                  fontFamily="sans-serif"
-                >
-                  TCC
-                </text>
-              </svg>
+            <div className="size-52 bg-white flex items-center justify-center relative p-1">
+              <canvas ref={canvasRef} className="size-full rounded-sm" />
 
               {/* Holographic Watermark Scan Animation */}
-              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-foreground/30 to-transparent animate-bounce opacity-60" />
+              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-60 pointer-events-none" />
             </div>
 
             {/* Countdown Progress */}

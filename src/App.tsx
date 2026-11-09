@@ -27,6 +27,8 @@ import {
   uploadStudentPhoto,
   checkDeviceAuthorization,
   rebindStudentDevice,
+  getOrCreateDeviceId,
+  logAccountLogin,
   User,
 } from '@/lib/supabase';
 import { ShieldCheck, LogOut } from 'lucide-react';
@@ -115,8 +117,20 @@ export const App: React.FC = () => {
 
       const { isAuthorized } = await checkDeviceAuthorization(profile.id);
       if (!isAuthorized) {
+        logAccountLogin({
+          profileId: user.id,
+          email: user.email || '',
+          deviceId: getOrCreateDeviceId(),
+          status: 'device_mismatch',
+        });
         setCurrentScreen('otp');
       } else {
+        logAccountLogin({
+          profileId: user.id,
+          email: user.email || '',
+          deviceId: getOrCreateDeviceId(),
+          status: 'success',
+        });
         setCurrentScreen('dashboard');
       }
     } else {
@@ -127,6 +141,12 @@ export const App: React.FC = () => {
       if (googleFullName) {
         setFullName(googleFullName);
       }
+      logAccountLogin({
+        profileId: user.id,
+        email: user.email || '',
+        deviceId: getOrCreateDeviceId(),
+        status: 'success',
+      });
       setCurrentScreen('consent');
     }
   };
@@ -134,6 +154,15 @@ export const App: React.FC = () => {
   const handleOtpVerified = async () => {
     if (studentDbId) {
       await rebindStudentDevice(studentDbId);
+    }
+    if (authUser) {
+      logAccountLogin({
+        profileId: authUser.id,
+        email: authUser.email || '',
+        deviceId: getOrCreateDeviceId(),
+        loginType: 'otp_verified',
+        status: 'success',
+      });
     }
     setCurrentScreen('dashboard');
   };

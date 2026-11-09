@@ -321,4 +321,31 @@ export async function fetchPublishedEvents(department: string) {
   }
 }
 
+/**
+ * Logs account login activity to Supabase
+ */
+export async function logAccountLogin(params: {
+  profileId: string;
+  email: string;
+  deviceId: string;
+  loginType?: 'google_oauth' | 'device_rebind' | 'otp_verified';
+  status?: 'success' | 'device_mismatch' | 'failed';
+}) {
+  const supabase = getSupabase();
+  if (!supabase) return;
+
+  try {
+    await supabase.from('account_login_logs').insert({
+      profile_id: params.profileId,
+      email: params.email,
+      device_id: params.deviceId,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      login_type: params.loginType || 'google_oauth',
+      status: params.status || 'success',
+    });
+  } catch (err) {
+    console.warn('Failed to record login audit log:', err);
+  }
+}
+
 export type { User, Session };
