@@ -601,7 +601,7 @@ export const App: React.FC = () => {
       {/* Main Full-Width Responsive Workspace */}
       <main
         className={`flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col ${
-          isSboPortal && !sboOfficer ? 'py-2 sm:py-4 justify-center' : 'py-6 sm:py-8 justify-start'
+          isSboPortal && !sboOfficer ? 'py-4 sm:py-6 justify-center' : 'py-6 sm:py-8 justify-start'
         }`}
       >
         {isSboPortal ? (
