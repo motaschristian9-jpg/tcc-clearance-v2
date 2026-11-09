@@ -18,7 +18,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { QrCode, FileText, ShieldCheck } from "lucide-react";
+import { QrCode, FileText } from "lucide-react";
 
 interface StudentPassResponsiveModalProps {
   open: boolean;
@@ -130,21 +130,8 @@ export function StudentPassResponsiveModal({
         </div>
       </div>
 
-      {/* Verified Device Badge */}
-      <div className="w-full max-w-[270px] px-3 py-2 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
-        <div className="flex flex-col">
-          <span className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
-            <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-            Verified Device
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            Present this to SBO officers for scanning
-          </span>
-        </div>
-      </div>
-
       {/* Actions */}
-      <div className="w-full max-w-[270px] space-y-2 pt-0.5">
+      <div className="w-full max-w-[270px] space-y-2 pt-1">
         <Button
           type="button"
           onClick={() => {

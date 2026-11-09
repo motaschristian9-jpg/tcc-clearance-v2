@@ -9,7 +9,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QrCode, FileText, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { QrCode, FileText, ArrowLeft } from 'lucide-react';
 
 interface StudentPassCardProps {
   fullName: string;
@@ -142,19 +142,6 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
               </span>
               <span className="font-mono font-semibold text-foreground shrink-0 bg-muted/60 px-2 py-0.5 rounded text-[11px]">
                 Refreshes in {passCountdown}s
-              </span>
-            </div>
-          </div>
-
-          {/* Device Verification Badge */}
-          <div className="w-full max-w-[280px] p-2.5 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
-            <div className="flex flex-col">
-              <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
-                <ShieldCheck className="size-3.5 text-foreground" />
-                Verified Device
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                Present this to the SBO officer for scanning
               </span>
             </div>
           </div>
