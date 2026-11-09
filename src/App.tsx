@@ -42,7 +42,8 @@ import {
   logAccountLogin,
   User,
 } from '@/lib/supabase';
-import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, Lock } from 'lucide-react';
+import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, Lock, UserMinus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { SboSignInCard } from '@/components/officer/SboSignInCard';
 import { SboTerminalScreen } from '@/components/officer/SboTerminalScreen';
 import {
@@ -426,6 +427,33 @@ export const App: React.FC = () => {
     }
   };
 
+  // SBO Terminal shift management handlers
+  const handleLockSboTerminal = () => {
+    setSboOfficer(null);
+    localStorage.removeItem('TCC_SBO_OFFICER');
+    toast.info('Terminal Locked', {
+      description: 'SBO session locked for security.',
+    });
+  };
+
+  const handleReleaseSboTerminal = () => {
+    if (sboOfficer) {
+      try {
+        const raw = localStorage.getItem('TCC_SBO_ACTIVE_ACCOUNTS');
+        if (raw) {
+          const accs = JSON.parse(raw);
+          delete accs[sboOfficer.stationCode];
+          localStorage.setItem('TCC_SBO_ACTIVE_ACCOUNTS', JSON.stringify(accs));
+        }
+      } catch {}
+    }
+    setSboOfficer(null);
+    localStorage.removeItem('TCC_SBO_OFFICER');
+    toast.info('Shift Ended', {
+      description: `${sboOfficer?.stationCode || 'Station'} has been released and marked Available.`,
+    });
+  };
+
   return (
     <div
       data-vaul-drawer-wrapper=""
@@ -469,13 +497,31 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* SBO Terminal Active Station Badge or Student Profile Dropdown */}
+          {/* SBO Terminal Top Right Controls: End Shift and Lock */}
           {isSboPortal ? (
             sboOfficer ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-md bg-muted border border-border text-foreground">
-                  {sboOfficer.stationCode}
-                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReleaseSboTerminal}
+                  className="h-8 text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-destructive"
+                  title="End shift and mark account as available"
+                >
+                  <UserMinus className="size-3.5" />
+                  <span>End Shift</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLockSboTerminal}
+                  className="h-8 text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
+                  title="Lock terminal screen"
+                >
+                  <LogOut className="size-3.5" />
+                  <span>Lock</span>
+                </Button>
               </div>
             ) : null
           ) : (
@@ -566,30 +612,8 @@ export const App: React.FC = () => {
                 photoDataUrl,
               }}
               onApproveAttendance={handleOfficerApproveAttendance}
-              onLockTerminal={() => {
-                setSboOfficer(null);
-                localStorage.removeItem('TCC_SBO_OFFICER');
-                toast.info('Terminal Locked', {
-                  description: 'SBO session locked for security.',
-                });
-              }}
-              onReleaseTerminal={() => {
-                if (sboOfficer) {
-                  try {
-                    const raw = localStorage.getItem('TCC_SBO_ACTIVE_ACCOUNTS');
-                    if (raw) {
-                      const accs = JSON.parse(raw);
-                      delete accs[sboOfficer.stationCode];
-                      localStorage.setItem('TCC_SBO_ACTIVE_ACCOUNTS', JSON.stringify(accs));
-                    }
-                  } catch {}
-                }
-                setSboOfficer(null);
-                localStorage.removeItem('TCC_SBO_OFFICER');
-                toast.info('Shift Ended', {
-                  description: `${sboOfficer?.stationCode || 'Station'} has been released and marked Available.`,
-                });
-              }}
+              onLockTerminal={handleLockSboTerminal}
+              onReleaseTerminal={handleReleaseSboTerminal}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center py-6">

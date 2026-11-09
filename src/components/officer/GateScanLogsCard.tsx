@@ -141,27 +141,29 @@ export const GateScanLogsCard: React.FC<GateScanLogsCardProps> = ({
     <Card className="border border-border shadow-sm flex flex-col h-full">
       <CardHeader className="text-left pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
-              Gate Activity
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
-              <Users className="size-3" />
-              {logs.length} Scanned
-            </span>
-          </div>
+          <CardTitle className="text-lg font-semibold tracking-tight text-foreground">
+            Student Scan Logs
+          </CardTitle>
 
-          {/* Action buttons: Export CSV & Clear */}
-          <div className="flex items-center gap-1.5">
+          {/* Action buttons: Total Scanned on the left side of Export CSV */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-muted/30 text-xs">
+              <Users className="size-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground text-[11px]">Total Scanned:</span>
+              <span className="font-mono font-semibold text-foreground text-[11px]">
+                {logs.length}
+              </span>
+            </div>
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleExportCsv}
               disabled={logs.length === 0}
-              className="h-7 text-xs px-2.5 gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
+              className="h-8 text-xs px-2.5 gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
               title="Download attendance records in CSV format"
             >
-              <Download className="size-3" />
+              <Download className="size-3.5" />
               <span className="hidden sm:inline">Export CSV</span>
             </Button>
 
@@ -171,18 +173,14 @@ export const GateScanLogsCard: React.FC<GateScanLogsCardProps> = ({
                 size="sm"
                 onClick={onClearLogs}
                 disabled={logs.length === 0}
-                className="h-7 text-xs px-2 text-muted-foreground hover:text-destructive cursor-pointer"
+                className="h-8 text-xs px-2 text-muted-foreground hover:text-destructive cursor-pointer"
                 title="Clear current station logs"
               >
-                <Trash2 className="size-3" />
+                <Trash2 className="size-3.5" />
               </Button>
             )}
           </div>
         </div>
-
-        <CardTitle className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
-          <span>Student Scan Logs</span>
-        </CardTitle>
 
         {/* Search & Filter Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">

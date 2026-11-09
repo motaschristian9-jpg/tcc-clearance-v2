@@ -192,13 +192,9 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
     <div className="w-full max-w-sm mx-auto my-auto py-4">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-left pb-3">
-          <div className="flex items-center justify-between pb-1">
+          <div className="pb-1">
             <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
               {officer.department} SBO Terminal
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-              <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-              {officer.stationCode} Ready
             </span>
           </div>
 
