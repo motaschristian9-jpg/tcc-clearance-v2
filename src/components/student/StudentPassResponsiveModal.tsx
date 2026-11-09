@@ -42,25 +42,45 @@ export function StudentPassResponsiveModal({
   onViewActivityCard,
 }: StudentPassResponsiveModalProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [qrSvg, setQrSvg] = React.useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
 
+  // Compute 30-second epoch token
+  const currentEpoch = Math.floor(Date.now() / 30000) * 30000;
+
   React.useEffect(() => {
-    // Time-bucketed token refreshing every 30 seconds
-    const timeBucket = Math.floor(Date.now() / 30000) * 30000;
     const passPayload = JSON.stringify({
       tcc_id: schoolId || "---",
       name: fullName || "Student",
       dept: department || "CIT",
       sec: section || "---",
-      epoch: timeBucket,
+      epoch: currentEpoch,
       v: 1,
     });
 
-    QRCode.toDataURL(passPayload, {
-      width: 240,
+    // 1. Generate crisp vector SVG (no canvas requirement, immune to mobile browser canvas privacy blocks)
+    QRCode.toString(passPayload, {
+      type: "svg",
       margin: 1,
       color: {
-        dark: "#0f172a",
+        dark: "#0a0a0a",
+        light: "#ffffff",
+      },
+      errorCorrectionLevel: "M",
+    })
+      .then((svg) => {
+        setQrSvg(svg);
+      })
+      .catch((err) => {
+        console.warn("Failed to generate QR SVG:", err);
+      });
+
+    // 2. Fallback PNG Data URL
+    QRCode.toDataURL(passPayload, {
+      width: 256,
+      margin: 1,
+      color: {
+        dark: "#0a0a0a",
         light: "#ffffff",
       },
       errorCorrectionLevel: "M",
@@ -71,21 +91,26 @@ export function StudentPassResponsiveModal({
       .catch((err) => {
         console.warn("Failed to generate QR data URL:", err);
       });
-  }, [schoolId, fullName, department, section, passCountdown]);
+  }, [schoolId, fullName, department, section, currentEpoch]);
 
   const PassBody = (
-    <div className="flex flex-col items-center gap-4 py-2">
+    <div className="flex flex-col items-center gap-4 py-2 w-full">
       {/* Dynamic 30s Real Scannable QR Display */}
-      <div className="p-3.5 rounded-2xl border border-border bg-white shadow-sm flex flex-col items-center">
-        <div className="size-52 bg-white flex items-center justify-center relative p-1">
-          {qrDataUrl ? (
+      <div className="w-full max-w-[280px] p-4 rounded-2xl border border-border bg-white shadow-sm flex flex-col items-center gap-3">
+        <div className="w-56 h-56 min-h-[224px] bg-white flex items-center justify-center relative p-1 rounded-xl">
+          {qrSvg ? (
+            <div
+              className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:shape-rendering-crispEdges"
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+            />
+          ) : qrDataUrl ? (
             <img
               src={qrDataUrl}
               alt="Student Pass QR Code"
-              className="size-full rounded-sm object-contain"
+              className="w-full h-full object-contain rounded-sm"
             />
           ) : (
-            <div className="size-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center">
               <QrCode className="size-16 text-muted-foreground/30 animate-pulse" />
             </div>
           )}
@@ -93,20 +118,20 @@ export function StudentPassResponsiveModal({
           <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-40 pointer-events-none" />
         </div>
 
-        {/* Countdown */}
-        <div className="w-full pt-3 flex items-center justify-between text-[11px] font-mono text-muted-foreground border-t border-border/60">
-          <span className="flex items-center gap-1 font-sans">
-            <QrCode className="size-3 text-foreground" />
-            Official Student Pass
+        {/* Countdown & Label with Guaranteed Spacing */}
+        <div className="w-full pt-2.5 flex items-center justify-between gap-3 text-[11px] border-t border-border/60">
+          <span className="flex items-center gap-1.5 font-medium text-muted-foreground shrink-0">
+            <QrCode className="size-3.5 text-foreground shrink-0" />
+            <span>Official Pass</span>
           </span>
-          <span className="font-semibold text-foreground">
+          <span className="font-mono font-semibold text-foreground shrink-0 bg-muted/60 px-2 py-0.5 rounded text-[11px]">
             Refreshes in {passCountdown}s
           </span>
         </div>
       </div>
 
       {/* Verified Device Badge */}
-      <div className="w-full p-2.5 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
+      <div className="w-full max-w-[280px] p-2.5 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
         <div className="flex flex-col">
           <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
             <ShieldCheck className="size-3.5 text-foreground" />
@@ -119,7 +144,7 @@ export function StudentPassResponsiveModal({
       </div>
 
       {/* Actions */}
-      <div className="w-full space-y-2 pt-1">
+      <div className="w-full max-w-[280px] space-y-2 pt-1">
         <Button
           type="button"
           onClick={() => {
@@ -155,7 +180,7 @@ export function StudentPassResponsiveModal({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="px-4 pb-6 max-h-[90vh]">
+      <DrawerContent className="px-4 pb-6 max-h-[90vh] overflow-y-auto">
         <DrawerHeader className="text-center sm:text-center pb-1 pt-2">
           <DrawerTitle className="text-lg font-semibold tracking-tight text-foreground">
             {fullName || "Student Pass"}
@@ -165,7 +190,7 @@ export function StudentPassResponsiveModal({
           </DrawerDescription>
         </DrawerHeader>
         {PassBody}
-        <DrawerFooter className="pt-2 px-0">
+        <DrawerFooter className="pt-2 px-0 max-w-[280px] mx-auto w-full">
           <DrawerClose asChild>
             <Button variant="outline" className="w-full h-9 text-xs">
               Close

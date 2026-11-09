@@ -55,17 +55,21 @@ export const App: React.FC = () => {
   const [section, setSection] = useState<string>('');
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
 
-  // Dynamic Pass countdown (30s window - AC6)
-  const [passCountdown, setPassCountdown] = useState<number>(30);
+  // Dynamic Pass countdown (accurate 30s synchronized rollover)
+  const [passCountdown, setPassCountdown] = useState<number>(() => {
+    return 30 - (Math.floor(Date.now() / 1000) % 30);
+  });
 
   useEffect(() => {
-    if (currentScreen === 'pass') {
-      const interval = setInterval(() => {
-        setPassCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [currentScreen]);
+    const updateCountdown = () => {
+      const remaining = 30 - (Math.floor(Date.now() / 1000) % 30);
+      setPassCountdown(remaining);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Intramurals Attendance Records for Clearance Card Matrix (starts fresh)
   const [attendanceRecords] = useState<DayAttendance[]>([
@@ -214,7 +218,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary selection:text-primary-foreground">
+    <div
+      data-vaul-drawer-wrapper=""
+      className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary selection:text-primary-foreground"
+    >
       {/* Full-Width Global Header */}
       <header className="w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

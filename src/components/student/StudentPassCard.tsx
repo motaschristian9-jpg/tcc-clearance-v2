@@ -30,25 +30,43 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
   onViewActivityCard,
   onBackToDashboard,
 }) => {
+  const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
+  // Compute 30-second epoch token
+  const currentEpoch = Math.floor(Date.now() / 30000) * 30000;
+
   useEffect(() => {
-    // Time-bucketed token refreshing every 30 seconds
-    const timeBucket = Math.floor(Date.now() / 30000) * 30000;
     const passPayload = JSON.stringify({
       tcc_id: schoolId || '---',
       name: fullName || 'Student',
       dept: department || 'CIT',
       sec: section || '---',
-      epoch: timeBucket,
+      epoch: currentEpoch,
       v: 1,
     });
 
-    QRCode.toDataURL(passPayload, {
-      width: 240,
+    QRCode.toString(passPayload, {
+      type: 'svg',
       margin: 1,
       color: {
-        dark: '#0f172a',
+        dark: '#0a0a0a',
+        light: '#ffffff',
+      },
+      errorCorrectionLevel: 'M',
+    })
+      .then((svg) => {
+        setQrSvg(svg);
+      })
+      .catch((err) => {
+        console.warn('Failed to render pass QR SVG:', err);
+      });
+
+    QRCode.toDataURL(passPayload, {
+      width: 256,
+      margin: 1,
+      color: {
+        dark: '#0a0a0a',
         light: '#ffffff',
       },
       errorCorrectionLevel: 'M',
@@ -57,9 +75,9 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
         setQrDataUrl(url);
       })
       .catch((err) => {
-        console.warn('Failed to render pass QR code data URL:', err);
+        console.warn('Failed to render pass QR data URL:', err);
       });
-  }, [schoolId, fullName, department, section, passCountdown]);
+  }, [schoolId, fullName, department, section, currentEpoch]);
 
   return (
     <div className="w-full max-w-md mx-auto py-4">
@@ -93,38 +111,43 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
 
         <CardContent className="flex flex-col items-center gap-4 text-center">
           {/* Dynamic 30s Real Scannable QR Display */}
-          <div className="relative p-4 rounded-xl border border-border bg-white shadow-sm flex flex-col items-center">
-            <div className="size-52 bg-white flex items-center justify-center relative p-1">
-              {qrDataUrl ? (
+          <div className="w-full max-w-[280px] p-4 rounded-2xl border border-border bg-white shadow-sm flex flex-col items-center gap-3">
+            <div className="w-56 h-56 min-h-[224px] bg-white flex items-center justify-center relative p-1 rounded-xl">
+              {qrSvg ? (
+                <div
+                  className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:shape-rendering-crispEdges"
+                  dangerouslySetInnerHTML={{ __html: qrSvg }}
+                />
+              ) : qrDataUrl ? (
                 <img
                   src={qrDataUrl}
                   alt="Student Pass QR Code"
-                  className="size-full rounded-sm object-contain"
+                  className="w-full h-full object-contain rounded-sm"
                 />
               ) : (
-                <div className="size-full flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center">
                   <QrCode className="size-16 text-muted-foreground/30 animate-pulse" />
                 </div>
               )}
 
               {/* Holographic Watermark Scan Animation */}
-              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-50 pointer-events-none" />
+              <div className="absolute inset-x-2 top-2 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-bounce opacity-40 pointer-events-none" />
             </div>
 
-            {/* Countdown Progress */}
-            <div className="w-full pt-3 flex items-center justify-between text-[11px] font-mono text-muted-foreground border-t border-border/60">
-              <span className="flex items-center gap-1 font-sans">
-                <QrCode className="size-3 text-foreground" />
-                Official Student Pass
+            {/* Countdown Progress & Label */}
+            <div className="w-full pt-2.5 flex items-center justify-between gap-3 text-[11px] border-t border-border/60">
+              <span className="flex items-center gap-1.5 font-medium text-muted-foreground shrink-0">
+                <QrCode className="size-3.5 text-foreground shrink-0" />
+                <span>Official Pass</span>
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-mono font-semibold text-foreground shrink-0 bg-muted/60 px-2 py-0.5 rounded text-[11px]">
                 Refreshes in {passCountdown}s
               </span>
             </div>
           </div>
 
           {/* Device Verification Badge */}
-          <div className="w-full p-2.5 rounded-lg border border-border bg-muted/30 flex items-center justify-between text-left">
+          <div className="w-full max-w-[280px] p-2.5 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
             <div className="flex flex-col">
               <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
                 <ShieldCheck className="size-3.5 text-foreground" />
@@ -137,7 +160,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
           </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-2 pt-2">
+        <CardFooter className="flex flex-col gap-2 pt-2 max-w-[280px] mx-auto w-full">
           <Button
             type="button"
             onClick={onViewActivityCard}
