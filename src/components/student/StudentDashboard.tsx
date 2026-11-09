@@ -25,6 +25,7 @@ import {
 import { DayAttendance } from '@/types/attendance';
 import { fetchPublishedEvents } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export interface ClearanceActivity {
   id: string;
@@ -49,6 +50,7 @@ interface StudentDashboardProps {
   onOpenQrPass: () => void;
   onViewActivityCard: (activityId: string) => void;
   onSignOut: () => void;
+  onEditProfile?: () => void;
 }
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
@@ -61,6 +63,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   attendanceRecords,
   onOpenQrPass,
   onViewActivityCard,
+  onEditProfile,
 }) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'ongoing' | 'upcoming'>('all');
@@ -131,19 +134,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Student Overview */}
           <div className="flex items-center gap-4">
-            <div className="relative size-16 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center shrink-0 shadow-xs">
-              {photoDataUrl ? (
-                <img
-                  src={photoDataUrl}
-                  alt={fullName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-xl font-bold text-foreground">
-                  {fullName ? fullName.charAt(0) : 'T'}
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={onEditProfile}
+              className="relative group rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer transition-transform active:scale-95 shrink-0"
+              title="Click to edit profile"
+            >
+              <Avatar className="size-16 border-2 border-border shadow-xs">
+                <AvatarImage src={photoDataUrl || ''} alt={fullName} />
+                <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
+                  {fullName ? fullName.charAt(0).toUpperCase() : 'T'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-medium">
+                Edit
+              </div>
+            </button>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">

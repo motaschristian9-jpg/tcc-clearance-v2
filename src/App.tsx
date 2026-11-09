@@ -10,6 +10,16 @@ import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { StudentPassCard } from '@/components/student/StudentPassCard';
 import { StudentPassResponsiveModal } from '@/components/student/StudentPassResponsiveModal';
 import { ClearanceMatrixCard } from '@/components/student/ClearanceMatrixCard';
+import { EditProfileDialog } from '@/components/student/EditProfileDialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -32,8 +42,7 @@ import {
   logAccountLogin,
   User,
 } from '@/lib/supabase';
-import { ShieldCheck, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Current active screen in student flow
@@ -45,6 +54,9 @@ export const App: React.FC = () => {
 
   // Responsive QR Pass Dialog/Drawer state
   const [showPassModal, setShowPassModal] = useState(false);
+
+  // Edit Profile Dialog state
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   // Student Profile State
   const [studentDbId, setStudentDbId] = useState<string | null>(null);
@@ -217,6 +229,42 @@ export const App: React.FC = () => {
     setCurrentScreen('dashboard');
   };
 
+  const handleSaveProfile = async (updated: {
+    fullName: string;
+    schoolId: string;
+    department: string;
+    yearLevel: string;
+    section: string;
+    photoDataUrl: string | null;
+  }) => {
+    setFullName(updated.fullName);
+    setSchoolId(updated.schoolId);
+    setDepartment(updated.department);
+    setYearLevel(updated.yearLevel);
+    setSection(updated.section);
+    if (updated.photoDataUrl) {
+      setPhotoDataUrl(updated.photoDataUrl);
+    }
+
+    if (authUser) {
+      let finalPhotoPath = '';
+      if (updated.photoDataUrl && updated.photoDataUrl.startsWith('data:')) {
+        const uploaded = await uploadStudentPhoto(authUser.id, updated.photoDataUrl);
+        if (uploaded) finalPhotoPath = uploaded;
+      }
+
+      await saveStudentProfileToSupabase({
+        profile_id: authUser.id,
+        email: authUser.email || '',
+        school_id_no: updated.schoolId,
+        full_name: updated.fullName,
+        department_id: updated.department,
+        section_id: updated.section,
+        photo_path: finalPhotoPath || undefined,
+      });
+    }
+  };
+
   return (
     <div
       data-vaul-drawer-wrapper=""
@@ -245,10 +293,10 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Student Status & Quick Actions */}
+          {/* Student Status & User Avatar Dropdown Menu */}
           {authUser && currentScreen !== 'signin' && (
             <div className="flex items-center gap-3">
-              <div className="hidden md:flex flex-col text-right">
+              <div className="hidden sm:flex flex-col text-right">
                 <span className="text-xs font-medium text-foreground truncate max-w-[180px]">
                   {fullName || 'Student'}
                 </span>
@@ -256,15 +304,62 @@ export const App: React.FC = () => {
                   {department} · {section || '3A'}
                 </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSignOutDialog(true)}
-                className="h-8 text-xs gap-1.5 cursor-pointer"
-              >
-                <LogOut className="size-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative rounded-full ring-offset-background transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:opacity-90 active:scale-95 cursor-pointer"
+                    aria-label="Student profile menu"
+                  >
+                    <Avatar className="size-9 border border-border shadow-xs">
+                      <AvatarImage
+                        src={photoDataUrl || authUser.user_metadata?.avatar_url || ''}
+                        alt={fullName || 'Student'}
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                        {fullName ? fullName.charAt(0).toUpperCase() : 'T'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 p-1.5">
+                  <DropdownMenuLabel className="font-normal p-2">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-xs font-semibold leading-none text-foreground truncate">
+                        {fullName || 'Student'}
+                      </p>
+                      <p className="text-[11px] leading-none text-muted-foreground truncate">
+                        {authUser.email}
+                      </p>
+                      <p className="text-[10px] font-mono text-muted-foreground pt-0.5">
+                        {department} · ID: {schoolId || '---'}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowEditProfileModal(true)}>
+                    <UserIcon className="size-4 mr-2" />
+                    <span>Edit Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowPassModal(true)}>
+                    <QrCode className="size-4 mr-2" />
+                    <span>My Attendance Pass</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCurrentScreen('activity-card')}>
+                    <FileText className="size-4 mr-2" />
+                    <span>Clearance Cards</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowSignOutDialog(true)}
+                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  >
+                    <LogOut className="size-4 mr-2" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
@@ -346,6 +441,7 @@ export const App: React.FC = () => {
             onOpenQrPass={() => setShowPassModal(true)}
             onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
             onSignOut={() => setShowSignOutDialog(true)}
+            onEditProfile={() => setShowEditProfileModal(true)}
           />
         )}
 
@@ -389,6 +485,19 @@ export const App: React.FC = () => {
           setShowPassModal(false);
           setCurrentScreen('activity-card');
         }}
+      />
+
+      {/* Edit Student Profile Dialog */}
+      <EditProfileDialog
+        open={showEditProfileModal}
+        onOpenChange={setShowEditProfileModal}
+        fullName={fullName}
+        schoolId={schoolId}
+        department={department}
+        yearLevel={yearLevel}
+        section={section}
+        photoDataUrl={photoDataUrl}
+        onSave={handleSaveProfile}
       />
 
       {/* Global Sign Out Confirmation Alert Dialog */}
