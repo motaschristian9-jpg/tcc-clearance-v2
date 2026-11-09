@@ -192,12 +192,6 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
     <div className="w-full max-w-sm mx-auto my-auto py-4">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-left pb-3">
-          <div className="pb-1">
-            <span className="text-[11px] font-medium tracking-widest uppercase text-muted-foreground">
-              {officer.department} SBO Terminal
-            </span>
-          </div>
-
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
             <ScanLine className="size-5 text-primary shrink-0" />
             <span>{officer.department} Event Clearance</span>
