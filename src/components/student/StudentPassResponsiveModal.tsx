@@ -94,10 +94,10 @@ export function StudentPassResponsiveModal({
   }, [schoolId, fullName, department, section, currentEpoch]);
 
   const PassBody = (
-    <div className="flex flex-col items-center gap-4 py-2 w-full">
+    <div className="flex flex-col items-center gap-3 py-1 w-full">
       {/* Dynamic 30s Real Scannable QR Display */}
-      <div className="w-full max-w-[280px] p-4 rounded-2xl border border-border bg-white shadow-sm flex flex-col items-center gap-3">
-        <div className="w-56 h-56 min-h-[224px] bg-white flex items-center justify-center relative p-1 rounded-xl">
+      <div className="w-full max-w-[270px] p-3 rounded-2xl border border-border bg-white shadow-sm flex flex-col items-center gap-2.5">
+        <div className="w-48 h-48 bg-white flex items-center justify-center relative p-1 rounded-xl">
           {qrSvg ? (
             <div
               className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:shape-rendering-crispEdges"
@@ -111,7 +111,7 @@ export function StudentPassResponsiveModal({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <QrCode className="size-16 text-muted-foreground/30 animate-pulse" />
+              <QrCode className="size-14 text-muted-foreground/30 animate-pulse" />
             </div>
           )}
           {/* Subtle scanning beam indicator */}
@@ -119,7 +119,7 @@ export function StudentPassResponsiveModal({
         </div>
 
         {/* Countdown & Label with Guaranteed Spacing */}
-        <div className="w-full pt-2.5 flex items-center justify-between gap-3 text-[11px] border-t border-border/60">
+        <div className="w-full pt-2 flex items-center justify-between gap-3 text-[11px] border-t border-border/60">
           <span className="flex items-center gap-1.5 font-medium text-muted-foreground shrink-0">
             <QrCode className="size-3.5 text-foreground shrink-0" />
             <span>Official Pass</span>
@@ -131,27 +131,27 @@ export function StudentPassResponsiveModal({
       </div>
 
       {/* Verified Device Badge */}
-      <div className="w-full max-w-[280px] p-2.5 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
+      <div className="w-full max-w-[270px] px-3 py-2 rounded-xl border border-border bg-muted/30 flex items-center justify-between text-left">
         <div className="flex flex-col">
-          <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
-            <ShieldCheck className="size-3.5 text-foreground" />
+          <span className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+            <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
             Verified Device
           </span>
           <span className="text-[10px] text-muted-foreground">
-            Present this to the SBO officer for scanning
+            Present this to SBO officers for scanning
           </span>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="w-full max-w-[280px] space-y-2 pt-1">
+      <div className="w-full max-w-[270px] space-y-2 pt-0.5">
         <Button
           type="button"
           onClick={() => {
             onOpenChange(false);
             onViewActivityCard();
           }}
-          className="w-full h-10 text-xs font-medium gap-2 cursor-pointer"
+          className="w-full h-9 text-xs font-medium gap-2 cursor-pointer"
         >
           <FileText className="size-3.5" />
           <span>View My Clearance Card</span>
@@ -180,9 +180,9 @@ export function StudentPassResponsiveModal({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="px-4 pb-6 max-h-[90vh] overflow-y-auto">
+      <DrawerContent className="px-4 pb-6">
         <DrawerHeader className="text-center sm:text-center pb-1 pt-2">
-          <DrawerTitle className="text-lg font-semibold tracking-tight text-foreground">
+          <DrawerTitle className="text-base font-semibold tracking-tight text-foreground">
             {fullName || "Student Pass"}
           </DrawerTitle>
           <DrawerDescription className="text-xs font-mono text-muted-foreground">
@@ -190,9 +190,9 @@ export function StudentPassResponsiveModal({
           </DrawerDescription>
         </DrawerHeader>
         {PassBody}
-        <DrawerFooter className="pt-2 px-0 max-w-[280px] mx-auto w-full">
+        <DrawerFooter className="pt-2 px-0 max-w-[270px] mx-auto w-full">
           <DrawerClose asChild>
-            <Button variant="outline" className="w-full h-9 text-xs">
+            <Button variant="outline" className="w-full h-8 text-xs">
               Close
             </Button>
           </DrawerClose>
