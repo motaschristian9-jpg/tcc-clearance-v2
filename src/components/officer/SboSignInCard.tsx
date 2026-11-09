@@ -129,13 +129,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
       ? customPosition.trim() || 'SBO Officer'
       : selectedPosition;
 
-  const isOccupied = currentOccupant && currentOccupant.status === 'active';
-  const isOccupiedByAnother =
-    isOccupied &&
-    currentOccupant.officerName.trim().toLowerCase() !== officerName.trim().toLowerCase();
-  const isReturningOccupant =
-    isOccupied &&
-    currentOccupant.officerName.trim().toLowerCase() === officerName.trim().toLowerCase();
+  const isOccupied = Boolean(currentOccupant && currentOccupant.status === 'active');
 
   const handleSelectStation = (stId: StationId) => {
     setSelectedStation(stId);
@@ -153,19 +147,18 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
         setCustomPosition(existing.position);
       }
     } else {
-      const prevKey = `${department}-${selectedStation.replace(/\s+/g, '')}`;
-      if (accounts[prevKey]?.officerName === officerName) {
-        setOfficerName('');
-      }
+      setOfficerName('');
+      setSelectedPosition('Attendance Committee Head');
+      setCustomPosition('');
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isOccupiedByAnother) {
+    if (isOccupied && currentOccupant.officerName.trim().toLowerCase() !== officerName.trim().toLowerCase()) {
       toast.error('Station Account Locked', {
-        description: `This station is locked to ${currentOccupant.officerName}. It cannot be changed unless they log out.`,
+        description: `This station is locked to ${currentOccupant.officerName}. It cannot be changed unless they end their duty.`,
       });
       return;
     }
@@ -200,11 +193,14 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const key = `${department}-${selectedStation.replace(/\s+/g, '')}`;
 
+      const finalOfficerName = isOccupied ? currentOccupant.officerName : officerName.trim();
+      const finalPosition = isOccupied ? currentOccupant.position : effectivePosition;
+
       const updatedAccounts: Record<string, StationAccountState> = {
         ...accounts,
         [key]: {
-          officerName: officerName.trim(),
-          position: effectivePosition,
+          officerName: finalOfficerName,
+          position: finalPosition,
           department,
           stationId: selectedStation,
           status: 'active',
@@ -218,14 +214,14 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
       } catch {}
 
       const officerSession: SboOfficerSession = {
-        name: officerName.trim(),
-        position: effectivePosition,
+        name: finalOfficerName,
+        position: finalPosition,
         department,
         stationCode: `${department}-${selectedStation.replace(/\s+/g, '')}`,
         loginTime: nowTime,
       };
 
-      toast.success('Gate Terminal Unlocked', {
+      toast.success(isOccupied ? 'Duty Resumed' : 'Gate Terminal Unlocked', {
         description: `Logged in as ${officerSession.name} (${selectedStation}).`,
       });
 
@@ -267,7 +263,20 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                     setPasscode('');
                     const newKey = `${val}-${selectedStation.replace(/\s+/g, '')}`;
                     const occupant = accounts[newKey];
-                    setOfficerName(occupant?.officerName || '');
+                    if (occupant && occupant.status === 'active') {
+                      setOfficerName(occupant.officerName);
+                      if (OFFICER_POSITIONS.includes(occupant.position)) {
+                        setSelectedPosition(occupant.position);
+                        setCustomPosition('');
+                      } else {
+                        setSelectedPosition('Custom / Other');
+                        setCustomPosition(occupant.position);
+                      }
+                    } else {
+                      setOfficerName('');
+                      setSelectedPosition('Attendance Committee Head');
+                      setCustomPosition('');
+                    }
                   }}
                 >
                   <SelectTrigger id="sbo-dept" className="h-9 text-xs">
@@ -344,11 +353,11 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                   })}
                 </div>
 
-                {isOccupiedByAnother && (
+                {isOccupied && (
                   <div className="p-2 rounded-md border border-amber-500/20 bg-amber-500/10 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-1.5 mt-1">
                     <Lock className="size-3.5 text-amber-600 shrink-0" />
                     <span className="truncate">
-                      Occupied by <strong>{currentOccupant.officerName}</strong>. Select a free account.
+                      Account occupied by <strong>{currentOccupant.officerName}</strong>. Name is locked while on duty.
                     </span>
                   </div>
                 )}
@@ -356,18 +365,35 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
 
               {/* Officer Full Name */}
               <Field>
-                <FieldLabel htmlFor="officer-name">Officer Name</FieldLabel>
+                <div className="flex items-center justify-between pb-0.5">
+                  <FieldLabel htmlFor="officer-name">Officer Name</FieldLabel>
+                  {isOccupied && (
+                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 font-mono">
+                      <Lock className="size-2.5" />
+                      Locked (In Duty)
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <Input
                     id="officer-name"
                     placeholder="Enter your name"
                     value={officerName}
                     onChange={(e) => setOfficerName(e.target.value)}
-                    disabled={isOccupiedByAnother}
-                    className="h-9 text-xs pr-8"
+                    disabled={isOccupied}
+                    readOnly={isOccupied}
+                    className={`h-9 text-xs pr-8 ${
+                      isOccupied
+                        ? 'bg-muted/50 cursor-not-allowed opacity-90 select-none text-foreground font-medium'
+                        : ''
+                    }`}
                     required
                   />
-                  <UserCheck className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  {isOccupied ? (
+                    <Lock className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400 pointer-events-none" />
+                  ) : (
+                    <UserCheck className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  )}
                 </div>
               </Field>
 
@@ -377,9 +403,14 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                 <Select
                   value={selectedPosition}
                   onValueChange={setSelectedPosition}
-                  disabled={isOccupiedByAnother}
+                  disabled={isOccupied}
                 >
-                  <SelectTrigger id="officer-pos" className="h-9 text-xs">
+                  <SelectTrigger
+                    id="officer-pos"
+                    className={`h-9 text-xs ${
+                      isOccupied ? 'bg-muted/50 cursor-not-allowed opacity-90' : ''
+                    }`}
+                  >
                     <SelectValue placeholder="Select Position" />
                   </SelectTrigger>
                   <SelectContent>
@@ -396,7 +427,8 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                     placeholder="Specify position"
                     value={customPosition}
                     onChange={(e) => setCustomPosition(e.target.value)}
-                    disabled={isOccupiedByAnother}
+                    disabled={isOccupied}
+                    readOnly={isOccupied}
                     className="h-8 text-xs mt-1.5"
                     autoFocus
                   />
@@ -416,7 +448,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                     placeholder="••••••••"
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    disabled={isOccupiedByAnother}
+                    disabled={isLoading}
                     className="h-9 text-xs font-mono pr-10"
                     required
                   />
@@ -436,24 +468,15 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
           <CardFooter className="pt-2 pb-5">
             <Button
               type="submit"
-              disabled={isLoading || isOccupiedByAnother}
-              className={`w-full h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs ${
-                isOccupiedByAnother
-                  ? 'opacity-60 cursor-not-allowed bg-muted text-muted-foreground border border-border'
-                  : ''
-              }`}
+              disabled={isLoading}
+              className="w-full h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
                   <span>Verifying...</span>
                 </>
-              ) : isOccupiedByAnother ? (
-                <>
-                  <Lock className="size-3.5 text-amber-500" />
-                  <span>Account In Use</span>
-                </>
-              ) : isReturningOccupant ? (
+              ) : isOccupied ? (
                 <>
                   <CheckCircle2 className="size-3.5" />
                   <span>Resume Duty</span>

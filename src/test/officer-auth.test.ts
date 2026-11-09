@@ -47,3 +47,20 @@ describe('TCC Academic Departments', () => {
   });
 });
 
+describe('SBO Station Occupancy and Name Protection', () => {
+  it('identifies occupied accounts as locked until duty ends', () => {
+    const activeAccounts: Record<string, { officerName: string; status: string }> = {
+      'CIT-SBO1': { officerName: 'Christian Motas', status: 'active' },
+    };
+
+    const isOccupied = (key: string) => Boolean(activeAccounts[key] && activeAccounts[key].status === 'active');
+    expect(isOccupied('CIT-SBO1')).toBe(true);
+    expect(isOccupied('CIT-SBO2')).toBe(false);
+
+    // End shift releases the station
+    delete activeAccounts['CIT-SBO1'];
+    expect(isOccupied('CIT-SBO1')).toBe(false);
+  });
+});
+
+
