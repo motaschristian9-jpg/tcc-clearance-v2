@@ -99,13 +99,37 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     return acc + count;
   }, 0);
 
-  // Extract actual recorded stamps
-  const recentStamps: { day: string; slotLabel: string; time: string; date: string }[] = [];
+  // Extract actual recorded stamps with officer signatory details
+  const recentStamps: {
+    day: string;
+    slotLabel: string;
+    time: string;
+    date: string;
+    officerName?: string;
+    officerPosition?: string;
+  }[] = [];
+
   attendanceRecords.forEach((rec) => {
-    if (rec.slots['afternoon-out']) recentStamps.push({ day: rec.day, slotLabel: 'Afternoon Out', time: rec.slots['afternoon-out'], date: rec.date });
-    if (rec.slots['afternoon-in']) recentStamps.push({ day: rec.day, slotLabel: 'Afternoon In', time: rec.slots['afternoon-in'], date: rec.date });
-    if (rec.slots['morning-out']) recentStamps.push({ day: rec.day, slotLabel: 'Morning Out', time: rec.slots['morning-out'], date: rec.date });
-    if (rec.slots['morning-in']) recentStamps.push({ day: rec.day, slotLabel: 'Morning In', time: rec.slots['morning-in'], date: rec.date });
+    const slotConfigs = [
+      { key: 'afternoon-out' as const, label: 'Afternoon Out' },
+      { key: 'afternoon-in' as const, label: 'Afternoon In' },
+      { key: 'morning-out' as const, label: 'Morning Out' },
+      { key: 'morning-in' as const, label: 'Morning In' },
+    ];
+    slotConfigs.forEach(({ key, label }) => {
+      const time = rec.slots[key];
+      if (time) {
+        const off = rec.slotOfficers?.[key];
+        recentStamps.push({
+          day: rec.day,
+          slotLabel: label,
+          time,
+          date: rec.date,
+          officerName: off?.officerName,
+          officerPosition: off?.officerPosition,
+        });
+      }
+    });
   });
 
   const handleDownloadPack = (e: React.MouseEvent, id: string) => {
@@ -441,7 +465,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           {stamp.day} · {stamp.slotLabel}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          {stamp.date}, 2026 · SBO Scanner
+                          {stamp.date}, 2026 · {stamp.officerName ? `Stamped by ${stamp.officerName} (${stamp.officerPosition})` : 'SBO Scanner'}
                         </span>
                       </div>
                       <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-emerald-600 dark:text-emerald-400">
