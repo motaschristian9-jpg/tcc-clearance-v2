@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { OfficerScannerCard } from './OfficerScannerCard';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, LogOut, ArrowLeft, Users, UserCheck, UserMinus } from 'lucide-react';
+import { ShieldCheck, LogOut, Users, UserCheck, UserMinus } from 'lucide-react';
 import { EventDay, TimeSlotType, SboOfficerSession } from '@/types/attendance';
 import { toast } from 'sonner';
 
@@ -17,7 +17,6 @@ interface SboTerminalScreenProps {
   onApproveAttendance: (day: EventDay, slot: TimeSlotType, officer: SboOfficerSession) => void;
   onLockTerminal: () => void;
   onReleaseTerminal?: () => void;
-  onExitToStudentPortal: () => void;
 }
 
 export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
@@ -26,7 +25,6 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
   onApproveAttendance,
   onLockTerminal,
   onReleaseTerminal,
-  onExitToStudentPortal,
 }) => {
   const [stampedCount, setStampedCount] = useState<number>(0);
 
@@ -92,17 +90,6 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
           >
             <LogOut className="size-3.5" />
             <span className="hidden sm:inline">Lock</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onExitToStudentPortal}
-            className="h-8 text-xs gap-1 cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Return to Student Portal"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span className="hidden sm:inline">Student View</span>
           </Button>
         </div>
       </div>

@@ -20,7 +20,6 @@ import {
 import {
   ShieldCheck,
   Lock,
-  ArrowLeft,
   Loader2,
   UserCheck,
   CheckCircle2,
@@ -34,7 +33,6 @@ import { SboOfficerSession } from '@/types/attendance';
 
 interface SboSignInCardProps {
   onOfficerAuthenticated: (officer: SboOfficerSession) => void;
-  onBackToStudentPortal: () => void;
 }
 
 export type StationId = 'SBO 1' | 'SBO 2' | 'SBO 3' | 'SBO 4';
@@ -107,7 +105,6 @@ export const validateStationPasscode = (
 
 export const SboSignInCard: React.FC<SboSignInCardProps> = ({
   onOfficerAuthenticated,
-  onBackToStudentPortal,
 }) => {
   const [department, setDepartment] = useState<string>('CIT');
   const [selectedStation, setSelectedStation] = useState<StationId>('SBO 1');
@@ -436,7 +433,7 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
             </FieldGroup>
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-2 pt-2 pb-5">
+          <CardFooter className="pt-2 pb-5">
             <Button
               type="submit"
               disabled={isLoading || isOccupiedByAnother}
@@ -467,17 +464,6 @@ export const SboSignInCard: React.FC<SboSignInCardProps> = ({
                   <span>Start Duty</span>
                 </>
               )}
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onBackToStudentPortal}
-              className="w-full h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer gap-1.5"
-            >
-              <ArrowLeft className="size-3.5" />
-              <span>Return to Student View</span>
             </Button>
           </CardFooter>
         </form>

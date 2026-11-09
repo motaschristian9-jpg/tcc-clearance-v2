@@ -42,8 +42,7 @@ import {
   logAccountLogin,
   User,
 } from '@/lib/supabase';
-import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, ArrowLeft, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, Lock } from 'lucide-react';
 import { SboSignInCard } from '@/components/officer/SboSignInCard';
 import { SboTerminalScreen } from '@/components/officer/SboTerminalScreen';
 import { EventDay, TimeSlotType, SboOfficerSession } from '@/types/attendance';
@@ -451,22 +450,15 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* SBO Terminal Quick Actions or Student Profile Dropdown */}
+          {/* SBO Terminal Active Station Badge or Student Profile Dropdown */}
           {isSboPortal ? (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  window.location.hash = '';
-                  setIsSboPortal(false);
-                }}
-                className="h-8 text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="size-3.5" />
-                <span className="hidden sm:inline">Student View</span>
-              </Button>
-            </div>
+            sboOfficer ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-md bg-muted border border-border text-foreground">
+                  {sboOfficer.stationCode}
+                </span>
+              </div>
+            ) : null
           ) : (
             /* Student Status & User Avatar Dropdown Menu */
             authUser && currentScreen !== 'signin' && (
@@ -579,10 +571,6 @@ export const App: React.FC = () => {
                   description: `${sboOfficer?.stationCode || 'Station'} has been released and marked Available.`,
                 });
               }}
-              onExitToStudentPortal={() => {
-                window.location.hash = '';
-                setIsSboPortal(false);
-              }}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center py-6">
@@ -590,10 +578,6 @@ export const App: React.FC = () => {
                 onOfficerAuthenticated={(officer) => {
                   setSboOfficer(officer);
                   localStorage.setItem('TCC_SBO_OFFICER', JSON.stringify(officer));
-                }}
-                onBackToStudentPortal={() => {
-                  window.location.hash = '';
-                  setIsSboPortal(false);
                 }}
               />
             </div>
