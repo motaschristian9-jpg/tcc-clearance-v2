@@ -19,12 +19,12 @@ import {
 import {
   CalendarDays,
   CalendarPlus,
-  Calendar,
   Check,
   Plus,
   Minus,
   Trash2,
 } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from 'sonner';
 import { TCC_DEPARTMENTS } from '@/types/student';
 import {
@@ -323,15 +323,20 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                     </Field>
 
                     <Field className="gap-1">
-                      <FieldLabel htmlFor="start-date" className="text-xs font-medium text-foreground">
+                      <FieldLabel className="text-xs font-medium text-foreground">
                         Start Date
                       </FieldLabel>
-                      <Input
-                        id="start-date"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="h-9 text-xs font-mono"
+                      <DatePicker
+                        date={new Date(startDate + 'T00:00:00')}
+                        onSelect={(d) => {
+                          if (d) {
+                            const yyyy = d.getFullYear();
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const dd = String(d.getDate()).padStart(2, '0');
+                            setStartDate(`${yyyy}-${mm}-${dd}`);
+                          }
+                        }}
+                        buttonClassName="h-9 w-full"
                       />
                     </Field>
                   </div>
@@ -399,32 +404,24 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                             {dayItem.day}
                           </span>
 
-                          {/* Date Picker Button */}
-                          <div className="relative group/picker shrink-0">
-                            <div className="h-7 px-2.5 rounded-md border border-border bg-background hover:bg-muted/40 hover:border-primary/50 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs font-mono text-xs w-[105px] justify-between">
-                              <span className="font-semibold text-foreground select-none truncate">
-                                {dayItem.date}
-                              </span>
-                              <Calendar className="size-3 text-muted-foreground group-hover/picker:text-primary transition-colors shrink-0" />
-                            </div>
-                            <input
-                              type="date"
-                              value={dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val) {
-                                  handleDayIsoDateChange(idx, val);
-                                }
-                              }}
-                              onClick={(e) => {
-                                try {
-                                  e.currentTarget.showPicker?.();
-                                } catch {}
-                              }}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              title="Click to select date"
-                            />
-                          </div>
+                          {/* shadcn Popover + Calendar DatePicker */}
+                          <DatePicker
+                            date={
+                              new Date(
+                                (dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)) +
+                                  'T00:00:00'
+                              )
+                            }
+                            onSelect={(d) => {
+                              if (d) {
+                                const yyyy = d.getFullYear();
+                                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                const dd = String(d.getDate()).padStart(2, '0');
+                                handleDayIsoDateChange(idx, `${yyyy}-${mm}-${dd}`);
+                              }
+                            }}
+                            buttonClassName="w-[105px]"
+                          />
 
                           <Input
                             value={dayItem.theme || ''}
