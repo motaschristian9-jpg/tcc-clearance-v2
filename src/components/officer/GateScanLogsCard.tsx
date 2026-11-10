@@ -245,7 +245,7 @@ export const GateScanLogsCard: React.FC<GateScanLogsCardProps> = ({
 
       <CardContent className="flex-1 p-4 pt-0">
         {filteredLogs.length > 0 ? (
-          <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto no-scrollbar pr-1">
             {filteredLogs.map((log) => (
               <div
                 key={log.id}
