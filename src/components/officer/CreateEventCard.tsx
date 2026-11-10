@@ -20,8 +20,6 @@ import {
   CalendarDays,
   CalendarPlus,
   Check,
-  Plus,
-  Minus,
   Trash2,
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -301,8 +299,8 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                     />
                   </Field>
 
-                  {/* Department & Start Date */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Department, Start Date & Duration */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Field className="gap-1">
                       <FieldLabel htmlFor="dept-scope" className="text-xs font-medium text-foreground">
                         Department
@@ -339,54 +337,28 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                         buttonClassName="h-9 w-full"
                       />
                     </Field>
-                  </div>
 
-                  {/* Duration Days Selector */}
-                  <Field className="gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <FieldLabel className="text-xs font-medium text-foreground">
+                    <Field className="gap-1">
+                      <FieldLabel htmlFor="event-duration" className="text-xs font-medium text-foreground">
                         Duration
                       </FieldLabel>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setNumDays((prev) => Math.max(1, prev - 1))}
-                          className="size-6 rounded border border-border hover:bg-muted flex items-center justify-center cursor-pointer transition-colors text-foreground disabled:opacity-40"
-                          disabled={numDays <= 1}
-                        >
-                          <Minus className="size-3" />
-                        </button>
-                        <span className="text-xs font-bold font-mono px-2 text-primary">
-                          {numDays} {numDays === 1 ? 'Day' : 'Days'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setNumDays((prev) => Math.min(14, prev + 1))}
-                          className="size-6 rounded border border-border hover:bg-muted flex items-center justify-center cursor-pointer transition-colors text-foreground disabled:opacity-40"
-                          disabled={numDays >= 14}
-                        >
-                          <Plus className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {[1, 2, 3, 4, 5, 7].map((daysCount) => (
-                        <button
-                          key={daysCount}
-                          type="button"
-                          onClick={() => setNumDays(daysCount)}
-                          className={`px-2.5 py-1 text-xs rounded-md border transition-all cursor-pointer ${
-                            numDays === daysCount
-                              ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-2xs'
-                              : 'border-border bg-card hover:bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {daysCount}d
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
+                      <Select
+                        value={numDays.toString()}
+                        onValueChange={(val) => setNumDays(Number(val))}
+                      >
+                        <SelectTrigger id="event-duration" className="h-9 text-xs">
+                          <SelectValue placeholder="Duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 14 }, (_, i) => i + 1).map((d) => (
+                            <SelectItem key={d} value={d.toString()}>
+                              {d} {d === 1 ? 'Day' : 'Days'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
 
                   {/* Schedule Days */}
                   <Field className="gap-1.5">
