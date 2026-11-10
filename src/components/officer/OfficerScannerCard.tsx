@@ -26,6 +26,7 @@ import {
   TIME_SLOTS,
   ScannedStudentPayload,
   SboOfficerSession,
+  ClearanceEvent,
 } from '@/types/attendance';
 import {
   CheckCircle2,
@@ -52,14 +53,24 @@ interface OfficerScannerCardProps {
     officer: SboOfficerSession,
     scannedStudent?: ScannedStudentPayload
   ) => void;
+  activeEvent?: ClearanceEvent;
 }
 
 export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   officer,
   currentStudent,
   onApproveAttendance,
+  activeEvent,
 }) => {
-  const [selectedDay, setSelectedDay] = useState<EventDay>('Day 1');
+  const availableDays = activeEvent?.days || [
+    { day: 'Day 1', date: 'Nov 10' },
+    { day: 'Day 2', date: 'Nov 11' },
+    { day: 'Day 3', date: 'Nov 12' },
+    { day: 'Day 4', date: 'Nov 13' },
+    { day: 'Day 5', date: 'Nov 14' },
+  ];
+
+  const [selectedDay, setSelectedDay] = useState<EventDay>(availableDays[0]?.day || 'Day 1');
   const [selectedSlot, setSelectedSlot] = useState<TimeSlotType>('morning-in');
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [scannedResult, setScannedResult] = useState<ScannedStudentPayload | null>(null);
@@ -194,7 +205,9 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
         <CardHeader className="text-left pb-3">
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
             <ScanLine className="size-5 text-primary shrink-0" />
-            <span>{officer.department} Event Clearance</span>
+            <span className="truncate">
+              {activeEvent ? activeEvent.title : `${officer.department} Event Clearance`}
+            </span>
           </CardTitle>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-0.5">
             <BadgeCheck className="size-3.5 text-primary shrink-0" />
@@ -220,11 +233,11 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="Day 1">Day 1 · Nov 10</SelectItem>
-                        <SelectItem value="Day 2">Day 2 · Nov 11</SelectItem>
-                        <SelectItem value="Day 3">Day 3 · Nov 12</SelectItem>
-                        <SelectItem value="Day 4">Day 4 · Nov 13</SelectItem>
-                        <SelectItem value="Day 5">Day 5 · Nov 14</SelectItem>
+                        {availableDays.map((d) => (
+                          <SelectItem key={d.day} value={d.day}>
+                            {d.day} · {d.date}
+                          </SelectItem>
+                        ))}
                       </SelectGroup>
                     </SelectContent>
                   </Select>

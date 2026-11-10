@@ -51,6 +51,8 @@ import {
   TimeSlotType,
   SboOfficerSession,
   ScannedStudentPayload,
+  ClearanceEvent,
+  DEFAULT_ACTIVE_EVENT,
 } from '@/types/attendance';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -168,6 +170,18 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Active Clearance Event (persisted across sessions)
+  const [activeEvent, setActiveEvent] = useState<ClearanceEvent>(() => {
+    try {
+      const saved = localStorage.getItem('TCC_ACTIVE_EVENT');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.title && Array.isArray(parsed.days)) return parsed;
+      }
+    } catch {}
+    return DEFAULT_ACTIVE_EVENT;
+  });
+
   // Intramurals Attendance Records for Clearance Card Matrix (persisted across sessions)
   const [attendanceRecords, setAttendanceRecords] = useState<DayAttendance[]>(() => {
     try {
@@ -185,6 +199,31 @@ export const App: React.FC = () => {
       { day: 'Day 5', date: 'Nov 14', slots: {}, cleared: false },
     ];
   });
+
+  const handleUpdateActiveEvent = (newEvent: ClearanceEvent) => {
+    setActiveEvent(newEvent);
+    try {
+      localStorage.setItem('TCC_ACTIVE_EVENT', JSON.stringify(newEvent));
+    } catch {}
+
+    // Synchronize attendance records matrix with new event's days
+    setAttendanceRecords((prev) => {
+      const updated: DayAttendance[] = newEvent.days.map((dayConfig) => {
+        const existing = prev.find((p) => p.day === dayConfig.day);
+        return {
+          day: dayConfig.day,
+          date: dayConfig.date,
+          slots: existing?.slots || {},
+          slotOfficers: existing?.slotOfficers || {},
+          cleared: existing?.cleared || false,
+        };
+      });
+      try {
+        localStorage.setItem('TCC_ATTENDANCE_RECORDS', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   // SBO Officer attendance stamping handler with officer signatory audit
   const handleOfficerApproveAttendance = async (
@@ -616,6 +655,8 @@ export const App: React.FC = () => {
                 photoDataUrl,
               }}
               onApproveAttendance={handleOfficerApproveAttendance}
+              activeEvent={activeEvent}
+              onUpdateActiveEvent={handleUpdateActiveEvent}
               onLockTerminal={handleLockSboTerminal}
               onReleaseTerminal={handleReleaseSboTerminal}
             />

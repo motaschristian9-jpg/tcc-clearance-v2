@@ -1,4 +1,42 @@
-export type EventDay = 'Day 1' | 'Day 2' | 'Day 3' | 'Day 4' | 'Day 5';
+export type EventDay = 'Day 1' | 'Day 2' | 'Day 3' | 'Day 4' | 'Day 5' | (string & {});
+
+export interface EventDayConfig {
+  day: EventDay;
+  date: string;
+  theme?: string;
+}
+
+export interface ClearanceEvent {
+  id: string;
+  title: string;
+  department: string;
+  schoolYear: string;
+  semester: string;
+  totalDays: number;
+  days: EventDayConfig[];
+  status: 'active' | 'upcoming' | 'concluded';
+  createdAt: string;
+  createdByOfficer: string;
+}
+
+export const DEFAULT_ACTIVE_EVENT: ClearanceEvent = {
+  id: 'tcc-intra-2026',
+  title: 'TCC Intramurals 2026',
+  department: 'All Departments',
+  schoolYear: '2025-2026',
+  semester: '1st Semester',
+  totalDays: 5,
+  days: [
+    { day: 'Day 1', date: 'Nov 10', theme: 'Opening Ceremony & Cheerdance' },
+    { day: 'Day 2', date: 'Nov 11', theme: 'Ball Games & Board Games' },
+    { day: 'Day 3', date: 'Nov 12', theme: 'Athletics & Esports Tournament' },
+    { day: 'Day 4', date: 'Nov 13', theme: 'Semifinals & Cultural Night' },
+    { day: 'Day 5', date: 'Nov 14', theme: 'Championship Games & Awarding' },
+  ],
+  status: 'active',
+  createdAt: '2026-11-01',
+  createdByOfficer: 'Christian Motas',
+};
 
 export type TimeSlotType =
   | 'morning-in'

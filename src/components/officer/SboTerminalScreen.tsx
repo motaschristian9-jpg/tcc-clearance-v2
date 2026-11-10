@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { OfficerScannerCard } from './OfficerScannerCard';
 import { GateScanLogsCard } from './GateScanLogsCard';
+import { CreateEventCard } from './CreateEventCard';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   ScanLine,
   ClipboardList,
+  CalendarPlus,
 } from 'lucide-react';
 import {
   EventDay,
@@ -12,8 +15,8 @@ import {
   SboOfficerSession,
   ScannedStudentPayload,
   GateScanLogEntry,
+  ClearanceEvent,
 } from '@/types/attendance';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface SboTerminalScreenProps {
@@ -31,6 +34,8 @@ interface SboTerminalScreenProps {
     officer: SboOfficerSession,
     scannedStudent?: ScannedStudentPayload
   ) => void;
+  activeEvent: ClearanceEvent;
+  onUpdateActiveEvent: (event: ClearanceEvent) => void;
   onLockTerminal?: () => void;
   onReleaseTerminal?: () => void;
 }
@@ -39,6 +44,8 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
   officer,
   currentStudent,
   onApproveAttendance,
+  activeEvent,
+  onUpdateActiveEvent,
 }) => {
   const storageKey = `TCC_SBO_SCAN_LOGS_${officer.department}_${officer.stationCode}`;
 
@@ -56,7 +63,7 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
     return [];
   });
 
-  const [activeTab, setActiveTab] = useState<'scanner' | 'logs'>('scanner');
+  const [activeTab, setActiveTab] = useState<string>('clearance');
 
   const handleApproveWithCount = (
     day: EventDay,
@@ -121,70 +128,100 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
 
   return (
     <div className="w-full flex flex-col flex-1 max-w-6xl mx-auto px-2 sm:px-4">
-      {/* Mobile Tab Switcher */}
-      <div className="flex lg:hidden w-full items-center p-1 bg-muted/40 rounded-lg border border-border mb-3">
-        <button
-          type="button"
-          onClick={() => setActiveTab('scanner')}
-          className={cn(
-            'flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer',
-            activeTab === 'scanner'
-              ? 'bg-background text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <ScanLine className="size-3.5" />
-          <span>Scanner View</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('logs')}
-          className={cn(
-            'flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer',
-            activeTab === 'logs'
-              ? 'bg-background text-foreground shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <ClipboardList className="size-3.5" />
-          <span>Scan Logs</span>
-          <span className="ml-1 px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-primary/10 text-primary">
-            {scanLogs.length}
-          </span>
-        </button>
-      </div>
+      {/* Top Left Navigation Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-border/60 pb-3">
+          {/* Upper Left Tabs List */}
+          <TabsList className="bg-muted/80 p-1 rounded-xl border border-border/60 self-start h-10 shadow-2xs">
+            <TabsTrigger
+              value="clearance"
+              className="gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg cursor-pointer"
+            >
+              <ScanLine className="size-3.5 text-primary" />
+              <span>Gate Clearance</span>
+            </TabsTrigger>
 
-      {/* Main Terminal Area: Side-by-side on desktop, tabbed on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-6">
-        {/* Left Column: Officer QR Scanner */}
-        <div
-          className={cn(
-            'lg:col-span-5 w-full flex justify-center',
-            activeTab === 'logs' && 'hidden lg:flex'
-          )}
-        >
-          <OfficerScannerCard
-            officer={officer}
-            currentStudent={currentStudent}
-            onApproveAttendance={handleApproveWithCount}
-          />
+            <TabsTrigger
+              value="create-event"
+              className="gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg cursor-pointer"
+            >
+              <CalendarPlus className="size-3.5 text-primary" />
+              <span>Create Event</span>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="logs"
+              className="gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg cursor-pointer"
+            >
+              <ClipboardList className="size-3.5 text-primary" />
+              <span>Scan Logs</span>
+              <span className="ml-1 px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-primary/10 text-primary">
+                {scanLogs.length}
+              </span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Upper Right Active Event Indicator */}
+          <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-card shadow-2xs">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-foreground truncate max-w-[200px] sm:max-w-[260px]">
+                {activeEvent.title}
+              </span>
+              <span className="font-mono text-[11px] text-primary font-bold">
+                {activeEvent.totalDays}D
+              </span>
+            </span>
+          </div>
         </div>
 
-        {/* Right Column: Gate Scan Logs */}
-        <div
-          className={cn(
-            'lg:col-span-7 w-full',
-            activeTab === 'scanner' && 'hidden lg:block'
-          )}
-        >
+        {/* Tab 1: Gate Clearance (Live Scanner & Live Feed) */}
+        <TabsContent value="clearance" className="mt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-6">
+            {/* Left Column: Officer QR Scanner */}
+            <div className="lg:col-span-5 w-full flex justify-center">
+              <OfficerScannerCard
+                officer={officer}
+                currentStudent={currentStudent}
+                onApproveAttendance={handleApproveWithCount}
+                activeEvent={activeEvent}
+              />
+            </div>
+
+            {/* Right Column: Gate Scan Logs */}
+            <div className="lg:col-span-7 w-full">
+              <GateScanLogsCard
+                logs={scanLogs}
+                stationCode={officer.stationCode}
+                department={officer.department}
+                onClearLogs={handleClearLogs}
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Create Event Page */}
+        <TabsContent value="create-event" className="mt-0 pb-6">
+          <CreateEventCard
+            officer={officer}
+            activeEvent={activeEvent}
+            onUpdateActiveEvent={(evt) => {
+              onUpdateActiveEvent(evt);
+              setActiveTab('clearance');
+            }}
+          />
+        </TabsContent>
+
+        {/* Tab 3: Dedicated Full Scan Logs Table */}
+        <TabsContent value="logs" className="mt-0 pb-6">
           <GateScanLogsCard
             logs={scanLogs}
             stationCode={officer.stationCode}
             department={officer.department}
             onClearLogs={handleClearLogs}
           />
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
