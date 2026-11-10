@@ -765,9 +765,10 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* 5-Day Event Clearance Matrix Card (Full Screen Responsive Matrix) */}
+            {/* Event Clearance Matrix Card (Full Screen Responsive Matrix) */}
             {currentScreen === 'activity-card' && (
               <ClearanceMatrixCard
+                title={activeEvent.title}
                 fullName={fullName || 'Student'}
                 schoolId={schoolId || '---'}
                 section={section || '---'}

@@ -19,13 +19,9 @@ import {
 import {
   CalendarDays,
   CalendarPlus,
-  CheckCircle2,
-  Clock,
-  Sparkles,
   Check,
   Plus,
   Minus,
-  Building2,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -51,13 +47,13 @@ function generateDays(totalDays: number, startDateStr: string, existingDays?: Ev
   const baseDate = new Date(startDateStr);
 
   const defaultThemes = [
-    'Opening Ceremony & Parade',
-    'Ball Games & Sports Tournament',
-    'Academic Competitions & Esports',
-    'Semifinal Games & Cultural Show',
-    'Championship Finals & Awarding',
-    'Department Socials & Exhibits',
-    'Culmination & Closing Rites',
+    'Opening & Parade',
+    'Ball Games',
+    'Athletics & Esports',
+    'Semifinals & Cultural Night',
+    'Championship & Awarding',
+    'Department Socials',
+    'Culmination',
   ];
 
   for (let i = 0; i < totalDays; i++) {
@@ -106,9 +102,9 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
         semester: '2nd Semester',
         totalDays: 3,
         days: [
-          { day: 'Day 1', date: 'Feb 18', theme: 'Hackathon & Opening' },
-          { day: 'Day 2', date: 'Feb 19', theme: 'Tech Seminars & Workshops' },
-          { day: 'Day 3', date: 'Feb 20', theme: 'Project Pitching & Awarding' },
+          { day: 'Day 1', date: 'Feb 18', theme: 'Hackathon' },
+          { day: 'Day 2', date: 'Feb 19', theme: 'Workshops' },
+          { day: 'Day 3', date: 'Feb 20', theme: 'Awarding' },
         ],
         status: 'upcoming',
         createdAt: '2026-02-01',
@@ -120,8 +116,6 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
   // Event form states
   const [eventTitle, setEventTitle] = useState('');
   const [departmentScope, setDepartmentScope] = useState('All Departments');
-  const [schoolYear, setSchoolYear] = useState('2025-2026');
-  const [semester, setSemester] = useState('1st Semester');
   const [startDate, setStartDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -160,16 +154,12 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     e.preventDefault();
 
     if (!eventTitle.trim()) {
-      toast.error('Event Title Required', {
-        description: 'Please enter a name for the clearance event.',
-      });
+      toast.error('Event Title Required');
       return;
     }
 
     if (numDays < 1 || numDays > 14) {
-      toast.error('Invalid Duration', {
-        description: 'Event duration must be between 1 and 14 days.',
-      });
+      toast.error('Duration must be between 1 and 14 days');
       return;
     }
 
@@ -177,8 +167,8 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
       id: `event-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title: eventTitle.trim(),
       department: departmentScope,
-      schoolYear,
-      semester,
+      schoolYear: '2025-2026',
+      semester: '1st Semester',
       totalDays: numDays,
       days: daysSchedule,
       status: 'active',
@@ -186,7 +176,6 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
       createdByOfficer: officer.name,
     };
 
-    // Update events list
     const updatedList = [
       newEvent,
       ...eventsList.map((ev) => (ev.id === newEvent.id ? newEvent : { ...ev, status: 'upcoming' as const })),
@@ -196,14 +185,8 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
       localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(updatedList));
     } catch {}
 
-    // Activate event globally
     onUpdateActiveEvent(newEvent);
-
-    toast.success('Event Created & Activated!', {
-      description: `"${newEvent.title}" (${newEvent.totalDays} Days) is now active for gate clearance.`,
-    });
-
-    // Reset title for next event
+    toast.success(`"${newEvent.title}" Activated (${newEvent.totalDays} Days)`);
     setEventTitle('');
   };
 
@@ -218,17 +201,13 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     } catch {}
 
     onUpdateActiveEvent({ ...targetEvent, status: 'active' });
-    toast.success('Active Event Changed', {
-      description: `"${targetEvent.title}" is now the active clearance event.`,
-    });
+    toast.success(`"${targetEvent.title}" Activated`);
   };
 
   const handleDeleteEvent = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (id === activeEvent.id) {
-      toast.error('Cannot Delete Active Event', {
-        description: 'Please activate another event before deleting this one.',
-      });
+      toast.error('Cannot delete the active event');
       return;
     }
     const updated = eventsList.filter((ev) => ev.id !== id);
@@ -236,260 +215,156 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     try {
       localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(updated));
     } catch {}
-    toast.info('Event removed from presets.');
+    toast.info('Event removed');
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 text-left">
-      {/* Top Banner: Currently Active Clearance Event */}
-      <div className="p-4 sm:p-5 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-        <div className="flex items-start gap-3.5">
-          <div className="size-11 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 text-primary">
-            <Sparkles className="size-5" />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 flex items-center gap-1">
+    <div className="w-full flex flex-col gap-4 text-left">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Main Form Column (8 cols) */}
+        <div className="lg:col-span-8 flex flex-col gap-4">
+          <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
+            <CardHeader className="py-3 px-5 border-b border-border/40 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
+                <CalendarPlus className="size-4 text-primary" />
+                <span>Create Event</span>
+              </CardTitle>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                ACTIVE CLEARANCE EVENT
-              </span>
-              <span className="text-xs font-mono text-muted-foreground">
-                {activeEvent.schoolYear} · {activeEvent.semester}
-              </span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground mt-0.5">
-              {activeEvent.title}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-              <span>{activeEvent.department}</span>
-              <span>·</span>
-              <span className="font-semibold text-foreground">
-                {activeEvent.totalDays} Event Days ({activeEvent.totalDays * 4} Clearance Slots)
-              </span>
-              <span>·</span>
-              <span>
-                {activeEvent.days[0]?.date || 'Day 1'} to{' '}
-                {activeEvent.days[activeEvent.days.length - 1]?.date || `Day ${activeEvent.totalDays}`}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-          <div className="px-3 py-1.5 rounded-xl border border-border bg-card/80 text-xs flex items-center gap-2">
-            <Building2 className="size-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground text-[11px]">Station:</span>
-            <span className="font-semibold text-foreground font-mono">{officer.stationCode}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Main Column: Event Creation Form (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          <Card className="border border-border/80 shadow-sm bg-card rounded-2xl">
-            <CardHeader className="pb-3 border-b border-border/40">
-              <div className="flex items-center gap-2.5">
-                <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  <CalendarPlus className="size-4.5" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-bold tracking-tight text-foreground">
-                    Create New Clearance Event
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Set up event name, scope, duration, and clearance days schedule
-                  </p>
-                </div>
+                <span className="font-medium text-foreground truncate max-w-[200px]">
+                  {activeEvent.title}
+                </span>
+                <span className="font-mono">({activeEvent.totalDays}d)</span>
               </div>
             </CardHeader>
 
             <form onSubmit={handleCreateAndActivateEvent}>
-              <CardContent className="p-5 sm:p-6 space-y-5">
-                <FieldGroup className="gap-4">
+              <CardContent className="p-5 space-y-4">
+                <FieldGroup className="gap-3.5">
                   {/* Event Title */}
-                  <Field className="gap-1.5">
-                    <FieldLabel htmlFor="event-title" className="text-xs font-semibold text-foreground">
-                      Event Title / Name
+                  <Field className="gap-1">
+                    <FieldLabel htmlFor="event-title" className="text-xs font-medium text-foreground">
+                      Title
                     </FieldLabel>
                     <Input
                       id="event-title"
-                      placeholder="e.g. TCC Intramurals 2026, Foundation Day, or Tech Week"
+                      placeholder="e.g. TCC Intramurals 2026"
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
-                      className="h-10 text-sm font-medium"
+                      className="h-9 text-xs"
                       required
                     />
                   </Field>
 
-                  {/* Scope & Academic Year */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Field className="gap-1.5">
-                      <FieldLabel htmlFor="dept-scope" className="text-xs font-semibold text-foreground">
-                        Department Scope
+                  {/* Department & Start Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field className="gap-1">
+                      <FieldLabel htmlFor="dept-scope" className="text-xs font-medium text-foreground">
+                        Department
                       </FieldLabel>
                       <Select value={departmentScope} onValueChange={setDepartmentScope}>
                         <SelectTrigger id="dept-scope" className="h-9 text-xs">
                           <SelectValue placeholder="Scope" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="All Departments">All Departments (Campus-Wide)</SelectItem>
+                          <SelectItem value="All Departments">All Departments</SelectItem>
                           {TCC_DEPARTMENTS.map((dept) => (
                             <SelectItem key={dept.code} value={dept.code}>
-                              {dept.code} ({dept.name})
+                              {dept.code} · {dept.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </Field>
 
-                    <Field className="gap-1.5">
-                      <FieldLabel htmlFor="school-year" className="text-xs font-semibold text-foreground">
-                        School Year
+                    <Field className="gap-1">
+                      <FieldLabel htmlFor="start-date" className="text-xs font-medium text-foreground">
+                        Start Date
                       </FieldLabel>
                       <Input
-                        id="school-year"
-                        value={schoolYear}
-                        onChange={(e) => setSchoolYear(e.target.value)}
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
                         className="h-9 text-xs font-mono"
-                        placeholder="2025-2026"
                       />
-                    </Field>
-
-                    <Field className="gap-1.5">
-                      <FieldLabel htmlFor="semester-sel" className="text-xs font-semibold text-foreground">
-                        Semester
-                      </FieldLabel>
-                      <Select value={semester} onValueChange={setSemester}>
-                        <SelectTrigger id="semester-sel" className="h-9 text-xs">
-                          <SelectValue placeholder="Semester" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1st Semester">1st Semester</SelectItem>
-                          <SelectItem value="2nd Semester">2nd Semester</SelectItem>
-                          <SelectItem value="Summer Term">Summer Term</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </Field>
                   </div>
 
-                  {/* Start Date & How Many Days Is It? */}
-                  <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-3.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <span className="text-xs font-bold text-foreground block">
-                          Event Duration & Schedule
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          Specify starting date and total number of days for attendance
-                        </span>
-                      </div>
-
-                      {/* Number of Days Stepper */}
-                      <div className="flex items-center gap-2 bg-background border border-border rounded-xl p-1 shadow-2xs self-start sm:self-auto">
-                        <span className="text-xs font-semibold px-2 text-foreground">
-                          How many days:
-                        </span>
+                  {/* Duration Days Selector */}
+                  <Field className="gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <FieldLabel className="text-xs font-medium text-foreground">
+                        Duration
+                      </FieldLabel>
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => setNumDays((prev) => Math.max(1, prev - 1))}
-                          className="size-7 rounded-lg border border-border hover:bg-muted flex items-center justify-center cursor-pointer transition-colors text-foreground disabled:opacity-40"
+                          className="size-6 rounded border border-border hover:bg-muted flex items-center justify-center cursor-pointer transition-colors text-foreground disabled:opacity-40"
                           disabled={numDays <= 1}
                         >
-                          <Minus className="size-3.5" />
+                          <Minus className="size-3" />
                         </button>
-                        <span className="text-sm font-bold font-mono px-2 text-primary">
+                        <span className="text-xs font-bold font-mono px-2 text-primary">
                           {numDays} {numDays === 1 ? 'Day' : 'Days'}
                         </span>
                         <button
                           type="button"
                           onClick={() => setNumDays((prev) => Math.min(14, prev + 1))}
-                          className="size-7 rounded-lg border border-border hover:bg-muted flex items-center justify-center cursor-pointer transition-colors text-foreground disabled:opacity-40"
+                          className="size-6 rounded border border-border hover:bg-muted flex items-center justify-center cursor-pointer transition-colors text-foreground disabled:opacity-40"
                           disabled={numDays >= 14}
                         >
-                          <Plus className="size-3.5" />
+                          <Plus className="size-3" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                      <Field className="gap-1.5">
-                        <FieldLabel htmlFor="start-date" className="text-xs font-semibold text-foreground">
-                          Start Date
-                        </FieldLabel>
-                        <Input
-                          id="start-date"
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="h-9 text-xs"
-                        />
-                      </Field>
-
-                      {/* Quick Day Duration Selector Chips */}
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-xs font-semibold text-foreground">Quick Preset Days:</span>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {[1, 2, 3, 4, 5, 7].map((daysCount) => (
-                            <button
-                              key={daysCount}
-                              type="button"
-                              onClick={() => setNumDays(daysCount)}
-                              className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
-                                numDays === daysCount
-                                  ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-2xs'
-                                  : 'border-border bg-card hover:bg-muted text-muted-foreground'
-                              }`}
-                            >
-                              {daysCount} {daysCount === 1 ? 'Day' : 'Days'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[1, 2, 3, 4, 5, 7].map((daysCount) => (
+                        <button
+                          key={daysCount}
+                          type="button"
+                          onClick={() => setNumDays(daysCount)}
+                          className={`px-2.5 py-1 text-xs rounded-md border transition-all cursor-pointer ${
+                            numDays === daysCount
+                              ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-2xs'
+                              : 'border-border bg-card hover:bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {daysCount}d
+                        </button>
+                      ))}
                     </div>
-                  </div>
+                  </Field>
 
-                  {/* Day-by-Day Schedule Breakdown */}
-                  <Field className="gap-2">
-                    <div className="flex items-center justify-between">
-                      <FieldLabel className="text-xs font-semibold text-foreground">
-                        Day-by-Day Clearance Schedule ({numDays} {numDays === 1 ? 'Day' : 'Days'} · {numDays * 4} Total Slots)
-                      </FieldLabel>
-                      <span className="text-[11px] text-muted-foreground font-mono">
-                        4 Slots / Day (Morning & Afternoon)
-                      </span>
-                    </div>
+                  {/* Schedule Days */}
+                  <Field className="gap-1.5">
+                    <FieldLabel className="text-xs font-medium text-foreground">
+                      Schedule ({numDays} Days)
+                    </FieldLabel>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
                       {daysSchedule.map((dayItem, idx) => (
                         <div
                           key={dayItem.day}
-                          className="p-3 rounded-xl border border-border/70 bg-card hover:border-primary/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                          className="p-2 rounded-lg border border-border/80 bg-muted/20 flex items-center gap-2"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-mono font-bold text-xs shrink-0 border border-primary/20">
-                              {dayItem.day}
-                            </span>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                              <Input
-                                value={dayItem.date}
-                                onChange={(e) => handleDayDateChange(idx, e.target.value)}
-                                placeholder="Date (e.g. Nov 10)"
-                                className="h-8 text-xs font-mono w-28"
-                              />
-                              <Input
-                                value={dayItem.theme || ''}
-                                onChange={(e) => handleDayThemeChange(idx, e.target.value)}
-                                placeholder="Activity or Theme (e.g. Opening & Cheerdance)"
-                                className="h-8 text-xs flex-1 sm:w-64"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono shrink-0 pl-1">
-                            <Clock className="size-3 text-muted-foreground" />
-                            <span>M-In · M-Out · A-In · A-Out</span>
-                          </div>
+                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px] shrink-0 border border-primary/20 w-14 text-center">
+                            {dayItem.day}
+                          </span>
+                          <Input
+                            value={dayItem.date}
+                            onChange={(e) => handleDayDateChange(idx, e.target.value)}
+                            placeholder="Date"
+                            className="h-7 text-xs font-mono w-24 shrink-0 bg-background"
+                          />
+                          <Input
+                            value={dayItem.theme || ''}
+                            onChange={(e) => handleDayThemeChange(idx, e.target.value)}
+                            placeholder="Theme (optional)"
+                            className="h-7 text-xs flex-1 bg-background"
+                          />
                         </div>
                       ))}
                     </div>
@@ -497,64 +372,55 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                 </FieldGroup>
               </CardContent>
 
-              <CardFooter className="p-5 sm:p-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/10">
-                <p className="text-xs text-muted-foreground">
-                  Activating this event will update the live SBO scanner and student clearance cards.
-                </p>
+              <CardFooter className="py-3 px-5 border-t border-border/40 flex justify-end">
                 <Button
                   type="submit"
-                  className="w-full sm:w-auto h-10 px-6 text-xs font-semibold gap-2 cursor-pointer shadow-sm"
+                  className="h-8 px-4 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <CheckCircle2 className="size-4" />
-                  <span>Create & Activate Event</span>
+                  <Check className="size-3.5" />
+                  <span>Activate Event</span>
                 </Button>
               </CardFooter>
             </form>
           </Card>
         </div>
 
-        {/* Side Column: Saved Events & Presets (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <Card className="border border-border/80 shadow-sm bg-card rounded-2xl">
-            <CardHeader className="pb-3 border-b border-border/40">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold tracking-tight text-foreground flex items-center gap-2">
-                  <CalendarDays className="size-4 text-primary" />
-                  <span>Available Events</span>
-                </CardTitle>
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  {eventsList.length} Events
-                </span>
-              </div>
+        {/* Side Column: Events Presets (4 cols) */}
+        <div className="lg:col-span-4 flex flex-col gap-3">
+          <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
+            <CardHeader className="py-3 px-4 border-b border-border/40 flex flex-row items-center justify-between">
+              <CardTitle className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <CalendarDays className="size-3.5 text-primary" />
+                <span>Events ({eventsList.length})</span>
+              </CardTitle>
             </CardHeader>
 
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-3 space-y-2">
               {eventsList.map((ev) => {
                 const isActive = ev.id === activeEvent.id;
                 return (
                   <div
                     key={ev.id}
-                    onClick={() => !isActive && handleSetActiveExisting(ev)}
-                    className={`p-3.5 rounded-xl border transition-all text-left flex flex-col gap-2 ${
+                    className={`p-2.5 rounded-lg border transition-all text-left flex flex-col gap-1.5 ${
                       isActive
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-xs'
-                        : 'border-border bg-card hover:bg-muted/40 cursor-pointer'
+                        ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20'
+                        : 'border-border bg-card'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-xs text-foreground">
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-xs text-foreground truncate block">
                             {ev.title}
                           </span>
                           {isActive && (
-                            <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-mono font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
+                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
                               ACTIVE
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-muted-foreground block mt-0.5">
-                          {ev.department} · {ev.schoolYear}
+                        <span className="text-[10.5px] font-mono text-muted-foreground block">
+                          {ev.totalDays} Days · {ev.days[0]?.date} - {ev.days[ev.days.length - 1]?.date}
                         </span>
                       </div>
 
@@ -562,19 +428,12 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                         <button
                           type="button"
                           onClick={(e) => handleDeleteEvent(ev.id, e)}
-                          className="text-muted-foreground hover:text-destructive p-1 rounded-md transition-colors cursor-pointer"
-                          title="Delete Event"
+                          className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer shrink-0"
+                          title="Delete"
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-3" />
                         </button>
                       )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-1 border-t border-border/40">
-                      <span>{ev.totalDays} Event Days</span>
-                      <span>
-                        {ev.days[0]?.date} - {ev.days[ev.days.length - 1]?.date}
-                      </span>
                     </div>
 
                     {!isActive && (
@@ -582,14 +441,11 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSetActiveExisting(ev);
-                        }}
-                        className="w-full h-7 text-[11px] font-medium gap-1.5 mt-1 cursor-pointer"
+                        onClick={() => handleSetActiveExisting(ev)}
+                        className="w-full h-6 text-[10px] font-medium gap-1 cursor-pointer mt-0.5"
                       >
-                        <Check className="size-3" />
-                        <span>Switch to this Event</span>
+                        <Check className="size-2.5" />
+                        <span>Activate</span>
                       </Button>
                     )}
                   </div>
