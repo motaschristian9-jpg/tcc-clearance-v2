@@ -27,6 +27,7 @@ interface StudentPassResponsiveModalProps {
   schoolId: string;
   department: string;
   section: string;
+  photoDataUrl?: string | null;
   passCountdown: number;
   onViewActivityCard: () => void;
 }
@@ -38,6 +39,7 @@ export function StudentPassResponsiveModal({
   schoolId,
   department,
   section,
+  photoDataUrl,
   passCountdown,
   onViewActivityCard,
 }: StudentPassResponsiveModalProps) {
@@ -54,6 +56,7 @@ export function StudentPassResponsiveModal({
       name: fullName || "Student",
       dept: department || "CIT",
       sec: section || "---",
+      photo: photoDataUrl && photoDataUrl.startsWith("http") ? photoDataUrl : undefined,
       epoch: currentEpoch,
       v: 1,
     });
@@ -91,7 +94,7 @@ export function StudentPassResponsiveModal({
       .catch((err) => {
         console.warn("Failed to generate QR data URL:", err);
       });
-  }, [schoolId, fullName, department, section, currentEpoch]);
+  }, [schoolId, fullName, department, section, photoDataUrl, currentEpoch]);
 
   const PassBody = (
     <div className="flex flex-col items-center gap-3 py-1 w-full">

@@ -38,6 +38,7 @@ import {
   BadgeCheck,
   QrCode,
 } from 'lucide-react';
+import { fetchStudentPhotoBySchoolId } from '@/lib/supabase';
 
 interface OfficerScannerCardProps {
   officer: SboOfficerSession;
@@ -125,16 +126,27 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                     const raw = barcodes[0].rawValue;
                     try {
                       const payload = JSON.parse(raw);
+                      const scannedSchoolId = payload.tcc_id || payload.schoolId || '---';
+                      const directPhoto = payload.photo || payload.photoUrl || currentStudent.photoDataUrl || null;
                       setScannedResult({
                         fullName: payload.name || payload.fullName || 'Student',
-                        schoolId: payload.tcc_id || payload.schoolId || '---',
+                        schoolId: scannedSchoolId,
                         department: payload.dept || payload.department || officer.department,
                         section: payload.sec || payload.section || '---',
-                        photoDataUrl: currentStudent.photoDataUrl,
+                        photoDataUrl: directPhoto,
                         timestamp: payload.epoch || Date.now(),
                         deviceKeyValid: true,
                       });
                       setIsScanning(false);
+
+                      // Asynchronously fetch photo from cache or Supabase if not embedded
+                      if (!directPhoto && scannedSchoolId !== '---') {
+                        fetchStudentPhotoBySchoolId(scannedSchoolId).then((resolved) => {
+                          if (resolved) {
+                            setScannedResult((prev) => (prev ? { ...prev, photoDataUrl: resolved } : null));
+                          }
+                        });
+                      }
                     } catch {
                       setScannedResult({
                         fullName: raw.length > 25 ? raw.slice(0, 25) + '...' : raw,
@@ -177,16 +189,26 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
 
   // Handle simulated / mock QR scan of current student pass
   const handleSimulateScan = () => {
+    const studentId = currentStudent.schoolId || '2023-01048';
+    const directPhoto = currentStudent.photoDataUrl;
     setScannedResult({
       fullName: currentStudent.fullName || 'Student',
-      schoolId: currentStudent.schoolId || '---',
+      schoolId: studentId,
       department: currentStudent.department || 'CIT',
       section: currentStudent.section || '---',
-      photoDataUrl: currentStudent.photoDataUrl,
+      photoDataUrl: directPhoto,
       timestamp: Date.now(),
       deviceKeyValid: true,
     });
     setIsScanning(false);
+
+    if (!directPhoto) {
+      fetchStudentPhotoBySchoolId(studentId).then((resolved) => {
+        if (resolved) {
+          setScannedResult((prev) => (prev ? { ...prev, photoDataUrl: resolved } : null));
+        }
+      });
+    }
   };
 
   const handleApprove = () => {

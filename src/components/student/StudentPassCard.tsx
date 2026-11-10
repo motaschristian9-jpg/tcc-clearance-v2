@@ -16,6 +16,7 @@ interface StudentPassCardProps {
   schoolId: string;
   department: string;
   section: string;
+  photoDataUrl?: string | null;
   passCountdown: number;
   onViewActivityCard: () => void;
   onBackToDashboard: () => void;
@@ -26,6 +27,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
   schoolId,
   department,
   section,
+  photoDataUrl,
   passCountdown,
   onViewActivityCard,
   onBackToDashboard,
@@ -42,6 +44,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
       name: fullName || 'Student',
       dept: department || 'CIT',
       sec: section || '---',
+      photo: photoDataUrl && photoDataUrl.startsWith('http') ? photoDataUrl : undefined,
       epoch: currentEpoch,
       v: 1,
     });
@@ -77,7 +80,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
       .catch((err) => {
         console.warn('Failed to render pass QR data URL:', err);
       });
-  }, [schoolId, fullName, department, section, currentEpoch]);
+  }, [schoolId, fullName, department, section, photoDataUrl, currentEpoch]);
 
   return (
     <div className="w-full max-w-md mx-auto py-4">

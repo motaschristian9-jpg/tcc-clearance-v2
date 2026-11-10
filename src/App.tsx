@@ -39,6 +39,8 @@ import {
   uploadStudentPhoto,
   checkDeviceAuthorization,
   rebindStudentDevice,
+  recordAttendanceToSupabase,
+  fetchStudentAttendanceFromSupabase,
   User,
 } from '@/lib/supabase';
 import { ShieldCheck, LogOut, User as UserIcon, QrCode, FileText, UserMinus } from 'lucide-react';
@@ -144,14 +146,61 @@ export const App: React.FC = () => {
   // Edit Profile Dialog state
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
-  // Student Profile State
-  const [studentDbId, setStudentDbId] = useState<string | null>(null);
-  const [fullName, setFullName] = useState<string>('');
-  const [schoolId, setSchoolId] = useState<string>('');
-  const [department, setDepartment] = useState<string>('CIT');
-  const [yearLevel, setYearLevel] = useState<string>('3');
-  const [section, setSection] = useState<string>('');
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  // Student Profile State (restored immediately from local cache on refresh)
+  const [studentDbId, setStudentDbId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('TCC_STUDENT_DB_ID') || null;
+    } catch {
+      return null;
+    }
+  });
+  const [fullName, setFullName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('TCC_STUDENT_NAME') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [schoolId, setSchoolId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('TCC_STUDENT_ID') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [department, setDepartment] = useState<string>(() => {
+    try {
+      return localStorage.getItem('TCC_STUDENT_DEPT') || 'CIT';
+    } catch {
+      return 'CIT';
+    }
+  });
+  const [yearLevel, setYearLevel] = useState<string>(() => {
+    try {
+      return localStorage.getItem('TCC_STUDENT_YEAR') || '3';
+    } catch {
+      return '3';
+    }
+  });
+  const [section, setSection] = useState<string>(() => {
+    try {
+      return localStorage.getItem('TCC_STUDENT_SECTION') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(() => {
+    try {
+      const savedPhoto = localStorage.getItem('TCC_STUDENT_PHOTO');
+      if (savedPhoto) return savedPhoto;
+      const savedId = localStorage.getItem('TCC_STUDENT_ID');
+      if (savedId) {
+        const idPhoto = localStorage.getItem(`TCC_STUDENT_PHOTO_${savedId}`);
+        if (idPhoto) return idPhoto;
+      }
+    } catch {}
+    return null;
+  });
 
   // Dynamic Pass countdown (accurate 30s synchronized rollover)
   const [passCountdown, setPassCountdown] = useState<number>(() => {
@@ -181,9 +230,17 @@ export const App: React.FC = () => {
     return DEFAULT_ACTIVE_EVENT;
   });
 
-  // Intramurals Attendance Records for Clearance Card Matrix (persisted across sessions)
+  // Intramurals Attendance Records for Clearance Card Matrix (persisted across sessions & per student)
   const [attendanceRecords, setAttendanceRecords] = useState<DayAttendance[]>(() => {
     try {
+      const currentId = localStorage.getItem('TCC_STUDENT_ID');
+      if (currentId) {
+        const studentSpecific = localStorage.getItem(`TCC_ATTENDANCE_RECORDS_${currentId}`);
+        if (studentSpecific) {
+          const parsed = JSON.parse(studentSpecific);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
       const saved = localStorage.getItem('TCC_ATTENDANCE_RECORDS');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -268,10 +325,13 @@ export const App: React.FC = () => {
     day: EventDay,
     slot: TimeSlotType,
     officer: SboOfficerSession,
-    _scannedStudent?: ScannedStudentPayload
+    scannedStudent?: ScannedStudentPayload
   ) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Identify target student
+    const targetSchoolId = scannedStudent?.schoolId || schoolId || '2023-01048';
 
     setAttendanceRecords((prev) => {
       const updated = prev.map((rec) => {
@@ -308,28 +368,99 @@ export const App: React.FC = () => {
         }
         return rec;
       });
+
       try {
         localStorage.setItem('TCC_ATTENDANCE_RECORDS', JSON.stringify(updated));
+        if (targetSchoolId) {
+          localStorage.setItem(`TCC_ATTENDANCE_RECORDS_${targetSchoolId}`, JSON.stringify(updated));
+        }
       } catch {}
       return updated;
     });
 
-    // Save attendance stamp to Supabase with officer audit
-    const supabase = getSupabase();
-    if (supabase && studentDbId) {
-      try {
-        await supabase.from('attendance').insert({
-          student_id: studentDbId,
-          method: 'qr',
-          status: 'valid',
-          scanned_at: new Date().toISOString(),
-          serial_no: `${officer.department}-${officer.stationCode}-${Date.now().toString(36).toUpperCase()}`,
-        });
-      } catch (err) {
-        console.warn('Attendance sync note:', err);
-      }
+    // Save attendance stamp to Supabase with officer audit & signature
+    await recordAttendanceToSupabase({
+      schoolId: targetSchoolId,
+      day,
+      slot,
+      officer,
+      eventId: activeEvent.id,
+      timeFormatted: timeStr,
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tcc-attendance-updated'));
     }
   };
+
+  // Synchronize student attendance from Supabase & local cache on mount, schoolId/studentDbId change, or events
+  useEffect(() => {
+    const currentTargetId = schoolId || (typeof window !== 'undefined' ? localStorage.getItem('TCC_STUDENT_ID') : null);
+    if (!currentTargetId && !studentDbId) return;
+
+    let isMounted = true;
+
+    const syncAttendance = async () => {
+      try {
+        const synced = await fetchStudentAttendanceFromSupabase({
+          studentDbId,
+          schoolId: currentTargetId || undefined,
+          baseRecords: attendanceRecords,
+        });
+        if (isMounted && synced && synced.length > 0) {
+          setAttendanceRecords(synced);
+        }
+      } catch (err) {
+        console.warn('Could not sync student attendance:', err);
+      }
+    };
+
+    // Initial sync
+    syncAttendance();
+
+    // Listen for local tab / storage updates
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (
+        e.key === 'TCC_ATTENDANCE_RECORDS' ||
+        (currentTargetId && e.key === `TCC_ATTENDANCE_RECORDS_${currentTargetId}`)
+      ) {
+        syncAttendance();
+      }
+    };
+
+    const handleCustomUpdate = () => {
+      syncAttendance();
+    };
+
+    window.addEventListener('storage', handleStorageUpdate);
+    window.addEventListener('tcc-attendance-updated', handleCustomUpdate);
+
+    // Set up Supabase Realtime channel subscription for live clearance stamps!
+    const supabase = getSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let channel: any = null;
+    if (supabase) {
+      channel = supabase
+        .channel(`public:attendance:${currentTargetId || 'all'}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'attendance' },
+          () => {
+            syncAttendance();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('storage', handleStorageUpdate);
+      window.removeEventListener('tcc-attendance-updated', handleCustomUpdate);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [schoolId, studentDbId]);
 
   // Listen to Supabase Authentication & Session
   useEffect(() => {
@@ -373,6 +504,20 @@ export const App: React.FC = () => {
       setDepartment(profile.department_id || 'CIT');
       setSection(profile.section_id || '');
       setPhotoDataUrl(profile.photo_path || null);
+
+      try {
+        localStorage.setItem('TCC_STUDENT_DB_ID', profile.id);
+        localStorage.setItem('TCC_STUDENT_NAME', profile.full_name || '');
+        localStorage.setItem('TCC_STUDENT_ID', profile.school_id_no || '');
+        localStorage.setItem('TCC_STUDENT_DEPT', profile.department_id || 'CIT');
+        localStorage.setItem('TCC_STUDENT_SECTION', profile.section_id || '');
+        if (profile.photo_path) {
+          localStorage.setItem('TCC_STUDENT_PHOTO', profile.photo_path);
+          if (profile.school_id_no) {
+            localStorage.setItem(`TCC_STUDENT_PHOTO_${profile.school_id_no}`, profile.photo_path);
+          }
+        }
+      } catch {}
 
       const { isAuthorized } = await checkDeviceAuthorization(profile.id);
       if (!isAuthorized) {
@@ -418,6 +563,15 @@ export const App: React.FC = () => {
     setYearLevel('3');
     setSection('');
     setPhotoDataUrl(null);
+    try {
+      localStorage.removeItem('TCC_STUDENT_DB_ID');
+      localStorage.removeItem('TCC_STUDENT_NAME');
+      localStorage.removeItem('TCC_STUDENT_ID');
+      localStorage.removeItem('TCC_STUDENT_DEPT');
+      localStorage.removeItem('TCC_STUDENT_YEAR');
+      localStorage.removeItem('TCC_STUDENT_SECTION');
+      localStorage.removeItem('TCC_STUDENT_PHOTO');
+    } catch {}
   };
 
   const handleCompleteRegistration = async () => {
@@ -439,6 +593,19 @@ export const App: React.FC = () => {
 
       if (saved?.id) {
         setStudentDbId(saved.id);
+        try {
+          localStorage.setItem('TCC_STUDENT_DB_ID', saved.id);
+          localStorage.setItem('TCC_STUDENT_NAME', fullName);
+          localStorage.setItem('TCC_STUDENT_ID', schoolId);
+          localStorage.setItem('TCC_STUDENT_DEPT', department);
+          localStorage.setItem('TCC_STUDENT_SECTION', section);
+          if (finalPhotoPath) {
+            localStorage.setItem('TCC_STUDENT_PHOTO', finalPhotoPath);
+            if (schoolId) {
+              localStorage.setItem(`TCC_STUDENT_PHOTO_${schoolId}`, finalPhotoPath);
+            }
+          }
+        } catch {}
       }
     }
     setCurrentScreen('dashboard');
@@ -460,6 +627,20 @@ export const App: React.FC = () => {
     if (updated.photoDataUrl) {
       setPhotoDataUrl(updated.photoDataUrl);
     }
+
+    try {
+      localStorage.setItem('TCC_STUDENT_NAME', updated.fullName);
+      localStorage.setItem('TCC_STUDENT_ID', updated.schoolId);
+      localStorage.setItem('TCC_STUDENT_DEPT', updated.department);
+      localStorage.setItem('TCC_STUDENT_YEAR', updated.yearLevel);
+      localStorage.setItem('TCC_STUDENT_SECTION', updated.section);
+      if (updated.photoDataUrl) {
+        localStorage.setItem('TCC_STUDENT_PHOTO', updated.photoDataUrl);
+        if (updated.schoolId) {
+          localStorage.setItem(`TCC_STUDENT_PHOTO_${updated.schoolId}`, updated.photoDataUrl);
+        }
+      }
+    } catch {}
 
     if (authUser) {
       let finalPhotoPath = '';
@@ -777,6 +958,7 @@ export const App: React.FC = () => {
                   schoolId={schoolId || '---'}
                   department={department || 'CIT'}
                   section={section || '---'}
+                  photoDataUrl={photoDataUrl}
                   passCountdown={passCountdown}
                   onViewActivityCard={() => handleOpenClearanceCard()}
                   onBackToDashboard={() => setCurrentScreen('dashboard')}
@@ -809,6 +991,7 @@ export const App: React.FC = () => {
         schoolId={schoolId || '---'}
         department={department || 'CIT'}
         section={section || '---'}
+        photoDataUrl={photoDataUrl}
         passCountdown={passCountdown}
         onViewActivityCard={() => {
           setShowPassModal(false);
