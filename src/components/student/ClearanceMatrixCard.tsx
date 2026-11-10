@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardHeader,
@@ -8,15 +8,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { DayAttendance } from '@/types/attendance';
+import { DayAttendance, ClearanceEvent, DEFAULT_ACTIVE_EVENT } from '@/types/attendance';
+import { generateClearanceCardPdf } from '@/lib/pdf';
 import { toast } from 'sonner';
 
 interface ClearanceMatrixCardProps {
   title?: string;
   fullName: string;
   schoolId: string;
+  department?: string;
   section: string;
   attendanceRecords: DayAttendance[];
+  event?: ClearanceEvent;
   onBack: () => void;
 }
 
@@ -24,10 +27,13 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
   title = 'Event Clearance Card',
   fullName,
   schoolId,
+  department = 'CIT',
   section,
   attendanceRecords,
+  event,
   onBack,
 }) => {
+  const [isExporting, setIsExporting] = useState(false);
   const totalSlots = attendanceRecords.reduce((acc, curr) => {
     return acc + (curr.scanMode === '2-slots' ? 2 : 4);
   }, 0);
@@ -41,6 +47,39 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
   }, 0);
 
   const percent = totalSlots > 0 ? Math.round((clearedSlotsCount / totalSlots) * 100) : 0;
+
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    const toastId = toast.loading(`Generating official ${title} PDF for ${fullName || 'Student'}...`);
+
+    try {
+      const activeEv = event || {
+        ...DEFAULT_ACTIVE_EVENT,
+        title,
+        department,
+      };
+      const filename = await generateClearanceCardPdf({
+        event: activeEv,
+        fullName,
+        schoolId,
+        department,
+        section,
+        attendanceRecords,
+      });
+      toast.success('Clearance PDF Downloaded', {
+        id: toastId,
+        description: `Successfully exported ${filename}`,
+      });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      toast.error('Export Failed', {
+        id: toastId,
+        description: 'Failed to generate PDF document.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -82,20 +121,12 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
 
           <Button
             type="button"
-            onClick={() => {
-              toast.promise(
-                new Promise((resolve) => setTimeout(resolve, 1200)),
-                {
-                  loading: `Generating ${title} PDF for ${fullName || 'Student'}...`,
-                  success: `Official ${title} PDF generated successfully!`,
-                  error: 'Failed to generate PDF.',
-                }
-              );
-            }}
+            onClick={handleExportPdf}
+            disabled={isExporting}
             className="h-9 text-xs font-medium gap-2 cursor-pointer shadow-xs"
           >
             <Download className="size-3.5" />
-            <span>Export PDF</span>
+            <span>{isExporting ? 'Generating...' : 'Export PDF'}</span>
           </Button>
         </div>
       </div>

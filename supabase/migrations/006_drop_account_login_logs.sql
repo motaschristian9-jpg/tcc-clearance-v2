@@ -5,3 +5,4 @@
 
 -- Drop the redundant account_login_logs table and any associated policies/triggers
 drop table if exists public.account_login_logs cascade;
+

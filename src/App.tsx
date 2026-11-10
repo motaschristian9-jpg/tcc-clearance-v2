@@ -9,6 +9,7 @@ import { PhotoCaptureCard } from '@/components/student/PhotoCaptureCard';
 import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { StudentPassCard } from '@/components/student/StudentPassCard';
 import { StudentPassResponsiveModal } from '@/components/student/StudentPassResponsiveModal';
+import { ClearanceCardResponsiveModal } from '@/components/student/ClearanceCardResponsiveModal';
 import { ClearanceMatrixCard } from '@/components/student/ClearanceMatrixCard';
 import { EditProfileDialog } from '@/components/student/EditProfileDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -234,6 +235,32 @@ export const App: React.FC = () => {
       } catch {}
       return updated;
     });
+  };
+
+  // Responsive Clearance Card Modal State (Dialog on Desktop, Drawer on Mobile)
+  const [showClearanceModal, setShowClearanceModal] = useState<boolean>(false);
+  const [selectedClearanceEvent, setSelectedClearanceEvent] = useState<ClearanceEvent>(activeEvent);
+
+  const handleOpenClearanceCard = (activityId?: string) => {
+    if (activityId) {
+      try {
+        const saved = localStorage.getItem('TCC_ALL_EVENTS_LIST');
+        if (saved) {
+          const list = JSON.parse(saved);
+          const target = Array.isArray(list) ? list.find((e: ClearanceEvent) => e.id === activityId) : null;
+          if (target) {
+            setSelectedClearanceEvent(target);
+            if (target.id !== activeEvent.id) {
+              handleUpdateActiveEvent(target);
+            }
+            setShowClearanceModal(true);
+            return;
+          }
+        }
+      } catch {}
+    }
+    setSelectedClearanceEvent(activeEvent);
+    setShowClearanceModal(true);
   };
 
   // SBO Officer attendance stamping handler with officer signatory audit
@@ -608,7 +635,7 @@ export const App: React.FC = () => {
                       <QrCode className="size-4 mr-2" />
                       <span>My Attendance Pass</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setCurrentScreen('activity-card')}>
+                    <DropdownMenuItem onClick={() => handleOpenClearanceCard()}>
                       <FileText className="size-4 mr-2" />
                       <span>Clearance Cards</span>
                     </DropdownMenuItem>
@@ -736,19 +763,7 @@ export const App: React.FC = () => {
                 attendanceRecords={attendanceRecords}
                 activeEvent={activeEvent}
                 onOpenQrPass={() => setShowPassModal(true)}
-                onViewActivityCard={(activityId) => {
-                  try {
-                    const saved = localStorage.getItem('TCC_ALL_EVENTS_LIST');
-                    if (saved) {
-                      const list = JSON.parse(saved);
-                      const target = Array.isArray(list) ? list.find((e: ClearanceEvent) => e.id === activityId) : null;
-                      if (target && target.id !== activeEvent.id) {
-                        handleUpdateActiveEvent(target);
-                      }
-                    }
-                  } catch {}
-                  setCurrentScreen('activity-card');
-                }}
+                onViewActivityCard={handleOpenClearanceCard}
                 onSignOut={() => setShowSignOutDialog(true)}
                 onEditProfile={() => setShowEditProfileModal(true)}
               />
@@ -763,7 +778,7 @@ export const App: React.FC = () => {
                   department={department || 'CIT'}
                   section={section || '---'}
                   passCountdown={passCountdown}
-                  onViewActivityCard={() => setCurrentScreen('activity-card')}
+                  onViewActivityCard={() => handleOpenClearanceCard()}
                   onBackToDashboard={() => setCurrentScreen('dashboard')}
                 />
               </div>
@@ -773,8 +788,10 @@ export const App: React.FC = () => {
             {currentScreen === 'activity-card' && (
               <ClearanceMatrixCard
                 title={activeEvent.title}
+                event={activeEvent}
                 fullName={fullName || 'Student'}
                 schoolId={schoolId || '---'}
+                department={department || 'CIT'}
                 section={section || '---'}
                 attendanceRecords={attendanceRecords}
                 onBack={() => setCurrentScreen('dashboard')}
@@ -795,8 +812,20 @@ export const App: React.FC = () => {
         passCountdown={passCountdown}
         onViewActivityCard={() => {
           setShowPassModal(false);
-          setCurrentScreen('activity-card');
+          handleOpenClearanceCard();
         }}
+      />
+
+      {/* Responsive Clearance Card: Dialog on Desktop, Drawer on Mobile */}
+      <ClearanceCardResponsiveModal
+        open={showClearanceModal}
+        onOpenChange={setShowClearanceModal}
+        event={selectedClearanceEvent || activeEvent}
+        fullName={fullName || 'Student'}
+        schoolId={schoolId || '---'}
+        department={department || 'CIT'}
+        section={section || '---'}
+        attendanceRecords={attendanceRecords}
       />
 
       {/* Edit Student Profile Dialog */}
