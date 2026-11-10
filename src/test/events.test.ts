@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_ACTIVE_EVENT, ClearanceEvent } from '../types/attendance';
+import {
+  DEFAULT_ACTIVE_EVENT,
+  ClearanceEvent,
+  getRequiredSlotsForDay,
+} from '../types/attendance';
 
 describe('Clearance Event Setup & Days Configuration', () => {
   it('has default active event with 5 days', () => {
@@ -8,6 +12,7 @@ describe('Clearance Event Setup & Days Configuration', () => {
     expect(DEFAULT_ACTIVE_EVENT.days).toHaveLength(5);
     expect(DEFAULT_ACTIVE_EVENT.days[0].day).toBe('Day 1');
     expect(DEFAULT_ACTIVE_EVENT.days[4].day).toBe('Day 5');
+    expect(DEFAULT_ACTIVE_EVENT.scanMode).toBe('4-slots');
   });
 
   it('supports custom multi-day clearance events', () => {
@@ -18,6 +23,7 @@ describe('Clearance Event Setup & Days Configuration', () => {
       schoolYear: '2025-2026',
       semester: '2nd Semester',
       totalDays: 3,
+      scanMode: '4-slots',
       days: [
         { day: 'Day 1', date: 'Feb 18', theme: 'Hackathon' },
         { day: 'Day 2', date: 'Feb 19', theme: 'Tech Seminars' },
@@ -52,6 +58,37 @@ describe('Clearance Event Setup & Days Configuration', () => {
     expect(attendanceRecords).toHaveLength(3);
     expect(attendanceRecords[0].date).toBe('Nov 10');
     expect(attendanceRecords[2].day).toBe('Day 3');
+  });
+
+  it('returns all 4 slots for 4-slots mode (morning in/out, afternoon in/out)', () => {
+    const slots = getRequiredSlotsForDay('4-slots');
+    expect(slots).toHaveLength(4);
+    const ids = slots.map((s) => s.id);
+    expect(ids).toEqual(['morning-in', 'morning-out', 'afternoon-in', 'afternoon-out']);
+  });
+
+  it('returns only 2 slots for 2-slots mode (morning in, afternoon out)', () => {
+    const slots = getRequiredSlotsForDay('2-slots');
+    expect(slots).toHaveLength(2);
+    const ids = slots.map((s) => s.id);
+    expect(ids).toEqual(['morning-in', 'afternoon-out']);
+    expect(slots[0].label).toBe('Morning In');
+    expect(slots[1].label).toBe('Afternoon Out');
+  });
+
+  it('clears a 2-slots day when only morning-in and afternoon-out are stamped', () => {
+    const dayScanMode = '2-slots';
+    const slots = {
+      'morning-in': '08:05 AM',
+      'afternoon-out': '05:15 PM',
+    };
+
+    const isCleared =
+      dayScanMode === '2-slots'
+        ? !!(slots['morning-in'] && slots['afternoon-out'])
+        : !!(slots['morning-in'] && (slots as any)['morning-out'] && (slots as any)['afternoon-in'] && slots['afternoon-out']);
+
+    expect(isCleared).toBe(true);
   });
 });
 

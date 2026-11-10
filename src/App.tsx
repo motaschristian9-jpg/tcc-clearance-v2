@@ -210,12 +210,25 @@ export const App: React.FC = () => {
     setAttendanceRecords((prev) => {
       const updated: DayAttendance[] = newEvent.days.map((dayConfig) => {
         const existing = prev.find((p) => p.day === dayConfig.day);
+        const dayMode = dayConfig.scanMode || newEvent.scanMode || '4-slots';
+        const slots = existing?.slots || {};
+        const isCleared =
+          dayMode === '2-slots'
+            ? !!(slots['morning-in'] && slots['afternoon-out'])
+            : !!(
+                slots['morning-in'] &&
+                slots['morning-out'] &&
+                slots['afternoon-in'] &&
+                slots['afternoon-out']
+              );
+
         return {
           day: dayConfig.day,
           date: dayConfig.date,
-          slots: existing?.slots || {},
+          scanMode: dayMode,
+          slots,
           slotOfficers: existing?.slotOfficers || {},
-          cleared: existing?.cleared || false,
+          cleared: isCleared,
         };
       });
       try {
@@ -249,16 +262,23 @@ export const App: React.FC = () => {
               stationCode: officer.stationCode,
             },
           };
-          const allFour =
-            newSlots['morning-in'] &&
-            newSlots['morning-out'] &&
-            newSlots['afternoon-in'] &&
-            newSlots['afternoon-out'];
+          const dayConfig = activeEvent.days.find((d) => d.day === day);
+          const dayMode = rec.scanMode || dayConfig?.scanMode || activeEvent.scanMode || '4-slots';
+          const isCleared =
+            dayMode === '2-slots'
+              ? !!(newSlots['morning-in'] && newSlots['afternoon-out'])
+              : !!(
+                  newSlots['morning-in'] &&
+                  newSlots['morning-out'] &&
+                  newSlots['afternoon-in'] &&
+                  newSlots['afternoon-out']
+                );
           return {
             ...rec,
+            scanMode: dayMode,
             slots: newSlots,
             slotOfficers: newOfficers,
-            cleared: !!allFour,
+            cleared: isCleared,
           };
         }
         return rec;

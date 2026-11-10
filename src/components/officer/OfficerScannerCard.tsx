@@ -24,6 +24,7 @@ import {
   EventDay,
   TimeSlotType,
   TIME_SLOTS,
+  getRequiredSlotsForDay,
   ScannedStudentPayload,
   SboOfficerSession,
   ClearanceEvent,
@@ -75,6 +76,17 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [scannedResult, setScannedResult] = useState<ScannedStudentPayload | null>(null);
   const [lastApprovedMsg, setLastApprovedMsg] = useState<string | null>(null);
+
+  // Dynamic slot availability based on day's scan configuration (4-slots vs 2-slots)
+  const currentDayConfig = availableDays.find((d) => d.day === selectedDay);
+  const currentDayScanMode = currentDayConfig?.scanMode || activeEvent?.scanMode || '4-slots';
+  const availableSlots = getRequiredSlotsForDay(currentDayScanMode);
+
+  useEffect(() => {
+    if (!availableSlots.some((s) => s.id === selectedSlot)) {
+      setSelectedSlot(availableSlots[0]?.id || 'morning-in');
+    }
+  }, [availableSlots, selectedSlot]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -254,7 +266,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {TIME_SLOTS.map((slot) => (
+                        {availableSlots.map((slot) => (
                           <SelectItem key={slot.id} value={slot.id}>
                             {slot.label}
                           </SelectItem>

@@ -93,8 +93,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const totalClearedSlots = attendanceRecords.reduce((acc, curr) => {
     let count = 0;
     if (curr.slots['morning-in']) count++;
-    if (curr.slots['morning-out']) count++;
-    if (curr.slots['afternoon-in']) count++;
+    if (curr.scanMode !== '2-slots' && curr.slots['morning-out']) count++;
+    if (curr.scanMode !== '2-slots' && curr.slots['afternoon-in']) count++;
     if (curr.slots['afternoon-out']) count++;
     return acc + count;
   }, 0);

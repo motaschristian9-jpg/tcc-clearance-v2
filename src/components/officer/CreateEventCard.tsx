@@ -28,6 +28,7 @@ import { TCC_DEPARTMENTS } from '@/types/student';
 import {
   ClearanceEvent,
   EventDayConfig,
+  EventScanMode,
   DEFAULT_ACTIVE_EVENT,
   SboOfficerSession,
 } from '@/types/attendance';
@@ -78,7 +79,12 @@ function formatIsoToBadge(isoStr: string): string {
 }
 
 // Generate consecutive day configurations starting from a date
-function generateDays(totalDays: number, startDateStr: string, existingDays?: EventDayConfig[]): EventDayConfig[] {
+function generateDays(
+  totalDays: number,
+  startDateStr: string,
+  existingDays?: EventDayConfig[],
+  defaultScanMode: EventScanMode = '4-slots'
+): EventDayConfig[] {
   const result: EventDayConfig[] = [];
   const baseDate = new Date(startDateStr);
 
@@ -113,6 +119,7 @@ function generateDays(totalDays: number, startDateStr: string, existingDays?: Ev
       date: existing?.date || dateFormatted,
       isoDate: existing?.isoDate || isoString,
       theme: existing?.theme || defaultThemes[i % defaultThemes.length],
+      scanMode: existing?.scanMode || defaultScanMode,
     });
   }
 
@@ -142,10 +149,11 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
         schoolYear: '2025-2026',
         semester: '2nd Semester',
         totalDays: 3,
+        scanMode: '4-slots',
         days: [
-          { day: 'Day 1', date: 'Feb 18', theme: 'Hackathon' },
-          { day: 'Day 2', date: 'Feb 19', theme: 'Workshops' },
-          { day: 'Day 3', date: 'Feb 20', theme: 'Awarding' },
+          { day: 'Day 1', date: 'Feb 18', theme: 'Hackathon', scanMode: '4-slots' },
+          { day: 'Day 2', date: 'Feb 19', theme: 'Workshops', scanMode: '4-slots' },
+          { day: 'Day 3', date: 'Feb 20', theme: 'Awarding', scanMode: '2-slots' },
         ],
         status: 'upcoming',
         createdAt: '2026-02-01',
@@ -162,14 +170,35 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     return today.toISOString().split('T')[0];
   });
   const [numDays, setNumDays] = useState<number>(5);
+  const [scanMode, setScanMode] = useState<EventScanMode>('4-slots');
   const [daysSchedule, setDaysSchedule] = useState<EventDayConfig[]>(() =>
-    generateDays(5, new Date().toISOString().split('T')[0])
+    generateDays(5, new Date().toISOString().split('T')[0], undefined, '4-slots')
   );
 
-  // Sync days schedule when numDays or startDate changes
+  // Sync days schedule when numDays, startDate, or scanMode changes
   useEffect(() => {
-    setDaysSchedule((prev) => generateDays(numDays, startDate, prev));
+    setDaysSchedule((prev) => generateDays(numDays, startDate, prev, scanMode));
   }, [numDays, startDate]);
+
+  const handleScanModeChange = (newMode: EventScanMode) => {
+    setScanMode(newMode);
+    setDaysSchedule((prev) =>
+      prev.map((d) => ({
+        ...d,
+        scanMode: newMode,
+      }))
+    );
+  };
+
+  const handleDayScanModeChange = (index: number, newMode: EventScanMode) => {
+    setDaysSchedule((prev) => {
+      const copy = [...prev];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], scanMode: newMode };
+      }
+      return copy;
+    });
+  };
 
   const handleDayThemeChange = (index: number, newTheme: string) => {
     setDaysSchedule((prev) => {
@@ -213,6 +242,7 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
       schoolYear: '2025-2026',
       semester: '1st Semester',
       totalDays: numDays,
+      scanMode: scanMode,
       days: daysSchedule,
       status: 'active',
       createdAt: new Date().toISOString().split('T')[0],
@@ -229,7 +259,8 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     } catch {}
 
     onUpdateActiveEvent(newEvent);
-    toast.success(`"${newEvent.title}" Activated (${newEvent.totalDays} Days)`);
+    const scanLabel = scanMode === '2-slots' ? '2 Scans/Day' : '4 Scans/Day';
+    toast.success(`"${newEvent.title}" Activated (${newEvent.totalDays} Days · ${scanLabel})`);
     setEventTitle('');
   };
 
@@ -360,6 +391,29 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                     </Field>
                   </div>
 
+                  {/* Daily Scan Requirement */}
+                  <Field className="gap-1">
+                    <FieldLabel htmlFor="scan-mode" className="text-xs font-medium text-foreground">
+                      Daily Scan Requirement
+                    </FieldLabel>
+                    <Select
+                      value={scanMode}
+                      onValueChange={(val) => handleScanModeChange(val as EventScanMode)}
+                    >
+                      <SelectTrigger id="scan-mode" className="h-9 text-xs">
+                        <SelectValue placeholder="Select requirement" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="4-slots">
+                          Morning & Afternoon (Time In & Time Out) · 4 scans/day
+                        </SelectItem>
+                        <SelectItem value="2-slots">
+                          Morning Time In & Afternoon Time Out only · 2 scans/day
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
                   {/* Schedule Days */}
                   <Field className="gap-1.5">
                     <FieldLabel className="text-xs font-medium text-foreground">
@@ -370,30 +424,32 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                       {daysSchedule.map((dayItem, idx) => (
                         <div
                           key={dayItem.day}
-                          className="p-2 rounded-lg border border-border/80 bg-muted/20 flex items-center gap-2"
+                          className="p-2 rounded-lg border border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-2"
                         >
-                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px] shrink-0 border border-primary/20 w-14 text-center">
-                            {dayItem.day}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px] shrink-0 border border-primary/20 w-14 text-center">
+                              {dayItem.day}
+                            </span>
 
-                          {/* shadcn Popover + Calendar DatePicker */}
-                          <DatePicker
-                            date={
-                              new Date(
-                                (dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)) +
-                                  'T00:00:00'
-                              )
-                            }
-                            onSelect={(d) => {
-                              if (d) {
-                                const yyyy = d.getFullYear();
-                                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                const dd = String(d.getDate()).padStart(2, '0');
-                                handleDayIsoDateChange(idx, `${yyyy}-${mm}-${dd}`);
+                            {/* shadcn Popover + Calendar DatePicker */}
+                            <DatePicker
+                              date={
+                                new Date(
+                                  (dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)) +
+                                    'T00:00:00'
+                                )
                               }
-                            }}
-                            buttonClassName="w-[105px]"
-                          />
+                              onSelect={(d) => {
+                                if (d) {
+                                  const yyyy = d.getFullYear();
+                                  const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                  const dd = String(d.getDate()).padStart(2, '0');
+                                  handleDayIsoDateChange(idx, `${yyyy}-${mm}-${dd}`);
+                                }
+                              }}
+                              buttonClassName="w-[105px]"
+                            />
+                          </div>
 
                           <Input
                             value={dayItem.theme || ''}
@@ -401,6 +457,23 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                             placeholder="Theme (optional)"
                             className="h-7 text-xs flex-1 bg-background"
                           />
+
+                          <Select
+                            value={dayItem.scanMode || scanMode}
+                            onValueChange={(val) => handleDayScanModeChange(idx, val as EventScanMode)}
+                          >
+                            <SelectTrigger className="h-7 w-full sm:w-[130px] text-[11px] shrink-0 bg-background font-medium">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="4-slots" className="text-xs">
+                                4 Scans (In/Out AM & PM)
+                              </SelectItem>
+                              <SelectItem value="2-slots" className="text-xs">
+                                2 Scans (AM In, PM Out)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       ))}
                     </div>
@@ -455,8 +528,14 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                             </span>
                           )}
                         </div>
-                        <span className="text-[10.5px] font-mono text-muted-foreground block">
-                          {ev.totalDays} Days · {ev.days[0]?.date} - {ev.days[ev.days.length - 1]?.date}
+                        <span className="text-[10.5px] font-mono text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                          <span>{ev.totalDays}d</span>
+                          <span>·</span>
+                          <span className="px-1 py-0.2 rounded bg-muted text-[10px] text-foreground font-sans">
+                            {ev.scanMode === '2-slots' ? '2 Scans/d' : '4 Scans/d'}
+                          </span>
+                          <span>·</span>
+                          <span>{ev.days[0]?.date} - {ev.days[ev.days.length - 1]?.date}</span>
                         </span>
                       </div>
 

@@ -1,10 +1,13 @@
 export type EventDay = 'Day 1' | 'Day 2' | 'Day 3' | 'Day 4' | 'Day 5' | (string & {});
 
+export type EventScanMode = '4-slots' | '2-slots';
+
 export interface EventDayConfig {
   day: EventDay;
   date: string;
   isoDate?: string;
   theme?: string;
+  scanMode?: EventScanMode;
 }
 
 export interface ClearanceEvent {
@@ -15,6 +18,7 @@ export interface ClearanceEvent {
   semester: string;
   totalDays: number;
   days: EventDayConfig[];
+  scanMode?: EventScanMode;
   status: 'active' | 'upcoming' | 'concluded';
   createdAt: string;
   createdByOfficer: string;
@@ -27,12 +31,13 @@ export const DEFAULT_ACTIVE_EVENT: ClearanceEvent = {
   schoolYear: '2025-2026',
   semester: '1st Semester',
   totalDays: 5,
+  scanMode: '4-slots',
   days: [
-    { day: 'Day 1', date: 'Nov 10', theme: 'Opening Ceremony & Cheerdance' },
-    { day: 'Day 2', date: 'Nov 11', theme: 'Ball Games & Board Games' },
-    { day: 'Day 3', date: 'Nov 12', theme: 'Athletics & Esports Tournament' },
-    { day: 'Day 4', date: 'Nov 13', theme: 'Semifinals & Cultural Night' },
-    { day: 'Day 5', date: 'Nov 14', theme: 'Championship Games & Awarding' },
+    { day: 'Day 1', date: 'Nov 10', theme: 'Opening Ceremony & Cheerdance', scanMode: '4-slots' },
+    { day: 'Day 2', date: 'Nov 11', theme: 'Ball Games & Board Games', scanMode: '4-slots' },
+    { day: 'Day 3', date: 'Nov 12', theme: 'Athletics & Esports Tournament', scanMode: '4-slots' },
+    { day: 'Day 4', date: 'Nov 13', theme: 'Semifinals & Cultural Night', scanMode: '4-slots' },
+    { day: 'Day 5', date: 'Nov 14', theme: 'Championship Games & Awarding', scanMode: '4-slots' },
   ],
   status: 'active',
   createdAt: '2026-11-01',
@@ -58,6 +63,13 @@ export const TIME_SLOTS: TimeSlotConfig[] = [
   { id: 'afternoon-out', label: 'Afternoon Out', timeWindow: '04:30 PM - 05:30 PM' },
 ];
 
+export function getRequiredSlotsForDay(scanMode?: EventScanMode): TimeSlotConfig[] {
+  if (scanMode === '2-slots') {
+    return TIME_SLOTS.filter((s) => s.id === 'morning-in' || s.id === 'afternoon-out');
+  }
+  return TIME_SLOTS;
+}
+
 export interface SlotStampInfo {
   time: string;
   officerName: string;
@@ -69,6 +81,7 @@ export interface SlotStampInfo {
 export interface DayAttendance {
   day: EventDay;
   date: string;
+  scanMode?: EventScanMode;
   slots: {
     'morning-in'?: string;
     'morning-out'?: string;

@@ -28,12 +28,14 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
   attendanceRecords,
   onBack,
 }) => {
-  const totalSlots = attendanceRecords.length * 4;
+  const totalSlots = attendanceRecords.reduce((acc, curr) => {
+    return acc + (curr.scanMode === '2-slots' ? 2 : 4);
+  }, 0);
   const clearedSlotsCount = attendanceRecords.reduce((acc, curr) => {
     let count = 0;
     if (curr.slots['morning-in']) count++;
-    if (curr.slots['morning-out']) count++;
-    if (curr.slots['afternoon-in']) count++;
+    if (curr.scanMode !== '2-slots' && curr.slots['morning-out']) count++;
+    if (curr.scanMode !== '2-slots' && curr.slots['afternoon-in']) count++;
     if (curr.slots['afternoon-out']) count++;
     return acc + count;
   }, 0);
@@ -101,11 +103,25 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
       {/* 5-Day Full-Screen Responsive Matrix Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {attendanceRecords.map((item) => {
+          const dayTotalSlots = item.scanMode === '2-slots' ? 2 : 4;
           const slotsFilled =
             (item.slots['morning-in'] ? 1 : 0) +
-            (item.slots['morning-out'] ? 1 : 0) +
-            (item.slots['afternoon-in'] ? 1 : 0) +
+            (item.scanMode !== '2-slots' && item.slots['morning-out'] ? 1 : 0) +
+            (item.scanMode !== '2-slots' && item.slots['afternoon-in'] ? 1 : 0) +
             (item.slots['afternoon-out'] ? 1 : 0);
+
+          const slotDefinitions =
+            item.scanMode === '2-slots'
+              ? [
+                  { label: 'Morning In', key: 'morning-in' as const },
+                  { label: 'Afternoon Out', key: 'afternoon-out' as const },
+                ]
+              : [
+                  { label: 'Morning In', key: 'morning-in' as const },
+                  { label: 'Morning Out', key: 'morning-out' as const },
+                  { label: 'Afternoon In', key: 'afternoon-in' as const },
+                  { label: 'Afternoon Out', key: 'afternoon-out' as const },
+                ];
 
           return (
             <Card
@@ -123,7 +139,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    {slotsFilled}/4 Slots
+                    {slotsFilled}/{dayTotalSlots} Slots
                   </span>
                   {item.cleared ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -141,14 +157,7 @@ export const ClearanceMatrixCard: React.FC<ClearanceMatrixCardProps> = ({
               <Separator />
 
               <CardContent className="p-3.5 space-y-2.5 flex-1">
-                {(
-                  [
-                    { label: 'Morning In', key: 'morning-in' as const },
-                    { label: 'Morning Out', key: 'morning-out' as const },
-                    { label: 'Afternoon In', key: 'afternoon-in' as const },
-                    { label: 'Afternoon Out', key: 'afternoon-out' as const },
-                  ] as const
-                ).map(({ label, key }) => {
+                {slotDefinitions.map(({ label, key }) => {
                   const stampTime = item.slots[key];
                   const officer = item.slotOfficers?.[key];
 
