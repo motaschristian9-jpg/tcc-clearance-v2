@@ -8,14 +8,11 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import {
   isSupabaseConfigured,
   signInWithGoogle,
-  setSupabaseConfig,
 } from '@/lib/supabase';
-import { Settings2, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface SignInCardProps {
   onSignInSuccess?: () => void;
@@ -24,25 +21,19 @@ interface SignInCardProps {
 export const SignInCard: React.FC<SignInCardProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showConfig, setShowConfig] = useState(false);
-
-  // Fallback configuration inputs if .env isn't set
-  const [customUrl, setCustomUrl] = useState('');
-  const [customKey, setCustomKey] = useState('');
   const configured = isSupabaseConfigured();
 
   const handleGoogleSignIn = async () => {
     setErrorMsg(null);
     if (!configured) {
-      setErrorMsg('Supabase is not configured yet. Please configure your project URL and Anon Key below or in your .env file.');
-      setShowConfig(true);
+      setErrorMsg('Clearance authentication service is temporarily unavailable. Please contact the administrator.');
       return;
     }
 
     try {
       setIsLoading(true);
       await signInWithGoogle();
-      // Supabase will redirect to Google OAuth consent screen
+      // Supabase redirects to Google OAuth
     } catch (err: unknown) {
       console.error('Google Sign-in failed:', err);
       let message = err instanceof Error ? err.message : 'Failed to connect to Google via Supabase.';
@@ -52,15 +43,6 @@ export const SignInCard: React.FC<SignInCardProps> = () => {
       setErrorMsg(message);
       setIsLoading(false);
     }
-  };
-
-  const handleSaveConfig = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customUrl.trim() || !customKey.trim()) {
-      setErrorMsg('Both Supabase URL and Anon Key are required.');
-      return;
-    }
-    setSupabaseConfig(customUrl, customKey);
   };
 
   return (
@@ -125,59 +107,6 @@ export const SignInCard: React.FC<SignInCardProps> = () => {
           <p className="text-center text-[11px] text-muted-foreground leading-normal">
             Use your institutional or personal Gmail address.
           </p>
-
-          {/* Quick config helper if developer hasn't created .env yet */}
-          {!configured && (
-            <div className="pt-2 border-t border-border/60">
-              <button
-                type="button"
-                onClick={() => setShowConfig(!showConfig)}
-                className="w-full flex items-center justify-between text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Settings2 className="size-3.5" />
-                  Configure Supabase Keys
-                </span>
-                <span className="text-[10px] underline">{showConfig ? 'Hide' : 'Setup'}</span>
-              </button>
-
-              {showConfig && (
-                <form onSubmit={handleSaveConfig} className="mt-3 space-y-3 p-3 bg-muted/30 rounded-lg border border-border">
-                  <Field>
-                    <FieldLabel htmlFor="sb-url" className="text-[11px]">
-                      Project URL
-                    </FieldLabel>
-                    <Input
-                      id="sb-url"
-                      placeholder="https://xyzcompany.supabase.co"
-                      value={customUrl}
-                      onChange={(e) => setCustomUrl(e.target.value)}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="sb-key" className="text-[11px]">
-                      Anon Key
-                    </FieldLabel>
-                    <Input
-                      id="sb-key"
-                      placeholder="eyJhbGciOiJIUzI1NiIsIn..."
-                      type="password"
-                      value={customKey}
-                      onChange={(e) => setCustomKey(e.target.value)}
-                      className="h-8 text-xs font-mono"
-                    />
-                    <FieldDescription className="text-[10px]">
-                      Or define VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
-                    </FieldDescription>
-                  </Field>
-                  <Button type="submit" size="sm" className="w-full h-8 text-xs cursor-pointer">
-                    Save and Connect
-                  </Button>
-                </form>
-              )}
-            </div>
-          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-2 pt-2">

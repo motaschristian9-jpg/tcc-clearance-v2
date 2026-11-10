@@ -1,15 +1,9 @@
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 import { EventDay, TimeSlotType, DayAttendance, SboOfficerSession } from '@/types/attendance';
 
-// Retrieve credentials from Vite environment or localStorage
-const envUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const envAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
-const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('TCC_SUPABASE_URL') : null;
-const storedAnonKey = typeof window !== 'undefined' ? localStorage.getItem('TCC_SUPABASE_ANON_KEY') : null;
-
-const SUPABASE_URL = (envUrl && envUrl.trim().length > 0 ? envUrl : storedUrl) || '';
-const SUPABASE_ANON_KEY = (envAnonKey && envAnonKey.trim().length > 0 ? envAnonKey : storedAnonKey) || '';
+// Retrieve credentials from Vite environment
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || '';
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || '';
 
 let supabaseInstance: SupabaseClient | null = null;
 
@@ -19,24 +13,6 @@ export function isSupabaseConfigured(): boolean {
     SUPABASE_URL.startsWith('http') &&
     SUPABASE_ANON_KEY.length > 10
   );
-}
-
-export function setSupabaseConfig(url: string, anonKey: string) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('TCC_SUPABASE_URL', url.trim());
-    localStorage.setItem('TCC_SUPABASE_ANON_KEY', anonKey.trim());
-    supabaseInstance = null;
-    window.location.reload();
-  }
-}
-
-export function clearSupabaseConfig() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('TCC_SUPABASE_URL');
-    localStorage.removeItem('TCC_SUPABASE_ANON_KEY');
-    supabaseInstance = null;
-    window.location.reload();
-  }
 }
 
 export function getSupabase(): SupabaseClient | null {
