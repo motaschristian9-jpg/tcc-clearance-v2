@@ -5,8 +5,7 @@ import { CreateEventCard } from './CreateEventCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   ScanLine,
-  ClipboardList,
-  CalendarPlus,
+  CalendarDays,
 } from 'lucide-react';
 import {
   EventDay,
@@ -142,22 +141,11 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
             </TabsTrigger>
 
             <TabsTrigger
-              value="create-event"
+              value="events"
               className="gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg cursor-pointer"
             >
-              <CalendarPlus className="size-3.5 text-primary" />
-              <span>Create Event</span>
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="logs"
-              className="gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg cursor-pointer"
-            >
-              <ClipboardList className="size-3.5 text-primary" />
-              <span>Scan Logs</span>
-              <span className="ml-1 px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-primary/10 text-primary">
-                {scanLogs.length}
-              </span>
+              <CalendarDays className="size-3.5 text-primary" />
+              <span>Events</span>
             </TabsTrigger>
           </TabsList>
 
@@ -200,25 +188,14 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
           </div>
         </TabsContent>
 
-        {/* Tab 2: Create Event Page */}
-        <TabsContent value="create-event" className="mt-0 pb-6">
+        {/* Tab 2: Events Management Page (Table + Add Event Dialog) */}
+        <TabsContent value="events" className="mt-0 pb-6">
           <CreateEventCard
             officer={officer}
             activeEvent={activeEvent}
             onUpdateActiveEvent={(evt) => {
               onUpdateActiveEvent(evt);
-              setActiveTab('clearance');
             }}
-          />
-        </TabsContent>
-
-        {/* Tab 3: Dedicated Full Scan Logs Table */}
-        <TabsContent value="logs" className="mt-0 pb-6">
-          <GateScanLogsCard
-            logs={scanLogs}
-            stationCode={officer.stationCode}
-            department={officer.department}
-            onClearLogs={handleClearLogs}
           />
         </TabsContent>
       </Tabs>

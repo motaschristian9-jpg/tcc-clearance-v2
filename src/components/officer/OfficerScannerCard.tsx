@@ -212,7 +212,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto my-auto py-4">
+    <div className="w-full max-w-sm mx-auto">
       <Card className="border border-border shadow-sm">
         <CardHeader className="text-left pb-3">
           <CardTitle className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">

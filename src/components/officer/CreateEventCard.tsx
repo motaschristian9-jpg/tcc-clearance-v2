@@ -4,7 +4,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,10 +16,29 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   CalendarDays,
   CalendarPlus,
   Check,
   Trash2,
+  Plus,
+  Eye,
+  Calendar,
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from 'sonner';
@@ -162,7 +180,11 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     ];
   });
 
-  // Event form states
+  // Dialog controls
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false);
+  const [viewingEvent, setViewingEvent] = useState<ClearanceEvent | null>(null);
+
+  // Form states for creating event
   const [eventTitle, setEventTitle] = useState('');
   const [departmentScope, setDepartmentScope] = useState('All Departments');
   const [startDate, setStartDate] = useState(() => {
@@ -175,7 +197,7 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     generateDays(5, new Date().toISOString().split('T')[0], undefined, '4-slots')
   );
 
-  // Sync days schedule when numDays, startDate, or scanMode changes
+  // Sync days schedule when numDays or startDate changes
   useEffect(() => {
     setDaysSchedule((prev) => generateDays(numDays, startDate, prev, scanMode));
   }, [numDays, startDate]);
@@ -261,7 +283,10 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     onUpdateActiveEvent(newEvent);
     const scanLabel = scanMode === '2-slots' ? '2 Scans/Day' : '4 Scans/Day';
     toast.success(`"${newEvent.title}" Activated (${newEvent.totalDays} Days · ${scanLabel})`);
+
+    // Reset and close dialog
     setEventTitle('');
+    setIsCreateDialogOpen(false);
   };
 
   const handleSetActiveExisting = (targetEvent: ClearanceEvent) => {
@@ -275,11 +300,11 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     } catch {}
 
     onUpdateActiveEvent({ ...targetEvent, status: 'active' });
-    toast.success(`"${targetEvent.title}" Activated`);
+    toast.success(`"${targetEvent.title}" is now the active gate event`);
   };
 
-  const handleDeleteEvent = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteEvent = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (id === activeEvent.id) {
       toast.error('Cannot delete the active event');
       return;
@@ -289,287 +314,449 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     try {
       localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(updated));
     } catch {}
-    toast.info('Event removed');
+    toast.success('Event removed');
   };
 
   return (
-    <div className="w-full flex flex-col gap-4 text-left">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Main Form Column (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
-            <CardHeader className="py-3 px-5 border-b border-border/40 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
-                <CalendarPlus className="size-4 text-primary" />
-                <span>Create Event</span>
-              </CardTitle>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-medium text-foreground truncate max-w-[200px]">
-                  {activeEvent.title}
-                </span>
-                <span className="font-mono">({activeEvent.totalDays}d)</span>
-              </div>
-            </CardHeader>
+    <div className="w-full space-y-4">
+      {/* Events Table Card */}
+      <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
+        <CardHeader className="py-4 px-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="space-y-0.5">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <CalendarDays className="size-4 text-primary" />
+              <span>Clearance Events</span>
+              <span className="text-xs font-mono font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {eventsList.length}
+              </span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Configure campus events, duty schedules, and active gate clearance requirements.
+            </p>
+          </div>
 
-            <form onSubmit={handleCreateAndActivateEvent}>
-              <CardContent className="p-5 space-y-4">
-                <FieldGroup className="gap-3.5">
-                  {/* Event Title */}
-                  <Field className="gap-1">
-                    <FieldLabel htmlFor="event-title" className="text-xs font-medium text-foreground">
-                      Title
-                    </FieldLabel>
-                    <Input
-                      id="event-title"
-                      placeholder="e.g. TCC Intramurals 2026"
-                      value={eventTitle}
-                      onChange={(e) => setEventTitle(e.target.value)}
-                      className="h-9 text-xs"
-                      required
-                    />
-                  </Field>
+          <Button
+            type="button"
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="h-8 px-3.5 text-xs font-medium gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+          >
+            <Plus className="size-3.5" />
+            <span>Add Event</span>
+          </Button>
+        </CardHeader>
 
-                  {/* Department, Start Date & Duration */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Field className="gap-1">
-                      <FieldLabel htmlFor="dept-scope" className="text-xs font-medium text-foreground">
-                        Department
-                      </FieldLabel>
-                      <Select value={departmentScope} onValueChange={setDepartmentScope}>
-                        <SelectTrigger id="dept-scope" className="h-9 text-xs">
-                          <SelectValue placeholder="Scope" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="All Departments">All Departments</SelectItem>
-                          {TCC_DEPARTMENTS.map((dept) => (
-                            <SelectItem key={dept.code} value={dept.code}>
-                              {dept.code} · {dept.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/20 hover:bg-muted/20">
+                <TableHead className="w-[300px] pl-6 text-xs font-semibold text-foreground">
+                  Event & Scope
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">
+                  Schedule & Dates
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">
+                  Daily Requirement
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">
+                  Status
+                </TableHead>
+                <TableHead className="text-right pr-6 text-xs font-semibold text-foreground">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {eventsList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-xs text-muted-foreground">
+                    No clearance events found. Click "Add Event" to create one.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                eventsList.map((ev) => {
+                  const isActive = ev.id === activeEvent.id;
+                  const firstDate = ev.days[0]?.date || 'Day 1';
+                  const lastDate = ev.days[ev.days.length - 1]?.date || `Day ${ev.totalDays}`;
 
-                    <Field className="gap-1">
-                      <FieldLabel className="text-xs font-medium text-foreground">
-                        Start Date
-                      </FieldLabel>
-                      <DatePicker
-                        date={new Date(startDate + 'T00:00:00')}
-                        onSelect={(d) => {
-                          if (d) {
-                            const yyyy = d.getFullYear();
-                            const mm = String(d.getMonth() + 1).padStart(2, '0');
-                            const dd = String(d.getDate()).padStart(2, '0');
-                            setStartDate(`${yyyy}-${mm}-${dd}`);
-                          }
-                        }}
-                        buttonClassName="h-9 w-full"
-                      />
-                    </Field>
-
-                    <Field className="gap-1">
-                      <FieldLabel htmlFor="event-duration" className="text-xs font-medium text-foreground">
-                        Duration
-                      </FieldLabel>
-                      <Select
-                        value={numDays.toString()}
-                        onValueChange={(val) => setNumDays(Number(val))}
-                      >
-                        <SelectTrigger id="event-duration" className="h-9 text-xs">
-                          <SelectValue placeholder="Duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 14 }, (_, i) => i + 1).map((d) => (
-                            <SelectItem key={d} value={d.toString()}>
-                              {d} {d === 1 ? 'Day' : 'Days'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </div>
-
-                  {/* Daily Scan Requirement */}
-                  <Field className="gap-1">
-                    <FieldLabel htmlFor="scan-mode" className="text-xs font-medium text-foreground">
-                      Daily Scan Requirement
-                    </FieldLabel>
-                    <Select
-                      value={scanMode}
-                      onValueChange={(val) => handleScanModeChange(val as EventScanMode)}
+                  return (
+                    <TableRow
+                      key={ev.id}
+                      className={isActive ? 'bg-primary/[0.03] hover:bg-primary/[0.06]' : undefined}
                     >
-                      <SelectTrigger id="scan-mode" className="h-9 text-xs">
-                        <SelectValue placeholder="Select requirement" />
+                      {/* Event Title & Department Scope */}
+                      <TableCell className="pl-6 py-3.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                            {ev.title}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {ev.department} · {ev.schoolYear || '2025-2026'}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Schedule & Dates */}
+                      <TableCell className="py-3.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium font-mono text-foreground">
+                            {ev.totalDays} {ev.totalDays === 1 ? 'Day' : 'Days'}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-mono">
+                            {firstDate} – {lastDate}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Daily Scan Requirement */}
+                      <TableCell className="py-3.5">
+                        {ev.scanMode === '2-slots' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                            2 Scans (AM In, PM Out)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                            4 Scans (In/Out AM & PM)
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="py-3.5">
+                        {isActive ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Active Duty</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground font-medium">
+                            Upcoming
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="text-right pr-6 py-3.5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {!isActive ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSetActiveExisting(ev)}
+                              className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                            >
+                              Activate
+                            </Button>
+                          ) : (
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2">
+                              <Check className="size-3.5" />
+                              <span>Active</span>
+                            </span>
+                          )}
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setViewingEvent(ev)}
+                            title="View Daily Schedule"
+                            className="h-7 w-7 p-0 cursor-pointer text-muted-foreground hover:text-foreground"
+                          >
+                            <Eye className="size-3.5" />
+                          </Button>
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => handleDeleteEvent(ev.id, e)}
+                            disabled={isActive}
+                            title={isActive ? 'Active event cannot be deleted' : 'Delete event'}
+                            className="h-7 w-7 p-0 cursor-pointer text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:pointer-events-none"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Add Event Dialog (Preserves the exact create event field design) */}
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      >
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl"
+          onPointerDownOutside={(e) => {
+            // Prevent accidental close when clicking on portaled popovers
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('[role="dialog"]') || target?.closest('.calendar-popover')) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader className="p-5 border-b border-border/40 text-left">
+            <DialogTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+              <CalendarPlus className="size-4 text-primary" />
+              <span>Create New Event</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Configure event details, duration schedule, and daily scan requirements.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateAndActivateEvent} className="flex flex-col flex-1 overflow-hidden">
+            <div className="p-5 overflow-y-auto space-y-4 max-h-[calc(90vh-140px)]">
+              <FieldGroup className="gap-3.5">
+                {/* Event Title */}
+                <Field className="gap-1">
+                  <FieldLabel htmlFor="event-title" className="text-xs font-medium text-foreground">
+                    Title
+                  </FieldLabel>
+                  <Input
+                    id="event-title"
+                    placeholder="e.g. TCC Intramurals 2026"
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    className="h-9 text-xs"
+                    required
+                  />
+                </Field>
+
+                {/* Department, Start Date & Duration */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Field className="gap-1">
+                    <FieldLabel htmlFor="dept-scope" className="text-xs font-medium text-foreground">
+                      Department
+                    </FieldLabel>
+                    <Select value={departmentScope} onValueChange={setDepartmentScope}>
+                      <SelectTrigger id="dept-scope" className="h-9 text-xs">
+                        <SelectValue placeholder="Scope" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="4-slots">
-                          Morning & Afternoon (Time In & Time Out) · 4 scans/day
-                        </SelectItem>
-                        <SelectItem value="2-slots">
-                          Morning Time In & Afternoon Time Out only · 2 scans/day
-                        </SelectItem>
+                        <SelectItem value="All Departments">All Departments</SelectItem>
+                        {TCC_DEPARTMENTS.map((dept) => (
+                          <SelectItem key={dept.code} value={dept.code}>
+                            {dept.code} · {dept.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
 
-                  {/* Schedule Days */}
-                  <Field className="gap-1.5">
+                  <Field className="gap-1">
                     <FieldLabel className="text-xs font-medium text-foreground">
-                      Schedule ({numDays} Days)
+                      Start Date
                     </FieldLabel>
-
-                    <div className="space-y-1.5">
-                      {daysSchedule.map((dayItem, idx) => (
-                        <div
-                          key={dayItem.day}
-                          className="p-2 rounded-lg border border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-2"
-                        >
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px] shrink-0 border border-primary/20 w-14 text-center">
-                              {dayItem.day}
-                            </span>
-
-                            {/* shadcn Popover + Calendar DatePicker */}
-                            <DatePicker
-                              date={
-                                new Date(
-                                  (dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)) +
-                                    'T00:00:00'
-                                )
-                              }
-                              onSelect={(d) => {
-                                if (d) {
-                                  const yyyy = d.getFullYear();
-                                  const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                  const dd = String(d.getDate()).padStart(2, '0');
-                                  handleDayIsoDateChange(idx, `${yyyy}-${mm}-${dd}`);
-                                }
-                              }}
-                              buttonClassName="w-[105px]"
-                            />
-                          </div>
-
-                          <Input
-                            value={dayItem.theme || ''}
-                            onChange={(e) => handleDayThemeChange(idx, e.target.value)}
-                            placeholder="Theme (optional)"
-                            className="h-7 text-xs flex-1 bg-background"
-                          />
-
-                          <Select
-                            value={dayItem.scanMode || scanMode}
-                            onValueChange={(val) => handleDayScanModeChange(idx, val as EventScanMode)}
-                          >
-                            <SelectTrigger className="h-7 w-full sm:w-[130px] text-[11px] shrink-0 bg-background font-medium">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="4-slots" className="text-xs">
-                                4 Scans (In/Out AM & PM)
-                              </SelectItem>
-                              <SelectItem value="2-slots" className="text-xs">
-                                2 Scans (AM In, PM Out)
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                    </div>
+                    <DatePicker
+                      date={new Date(startDate + 'T00:00:00')}
+                      onSelect={(d) => {
+                        if (d) {
+                          const yyyy = d.getFullYear();
+                          const mm = String(d.getMonth() + 1).padStart(2, '0');
+                          const dd = String(d.getDate()).padStart(2, '0');
+                          setStartDate(`${yyyy}-${mm}-${dd}`);
+                        }
+                      }}
+                      buttonClassName="h-9 w-full"
+                    />
                   </Field>
-                </FieldGroup>
-              </CardContent>
 
-              <CardFooter className="py-3 px-5 border-t border-border/40 flex justify-end">
-                <Button
-                  type="submit"
-                  className="h-8 px-4 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Check className="size-3.5" />
-                  <span>Activate Event</span>
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
-        </div>
+                  <Field className="gap-1">
+                    <FieldLabel htmlFor="event-duration" className="text-xs font-medium text-foreground">
+                      Duration
+                    </FieldLabel>
+                    <Select
+                      value={numDays.toString()}
+                      onValueChange={(val) => setNumDays(Number(val))}
+                    >
+                      <SelectTrigger id="event-duration" className="h-9 text-xs">
+                        <SelectValue placeholder="Duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 14 }, (_, i) => i + 1).map((d) => (
+                          <SelectItem key={d} value={d.toString()}>
+                            {d} {d === 1 ? 'Day' : 'Days'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
 
-        {/* Side Column: Events Presets (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-3">
-          <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
-            <CardHeader className="py-3 px-4 border-b border-border/40 flex flex-row items-center justify-between">
-              <CardTitle className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <CalendarDays className="size-3.5 text-primary" />
-                <span>Events ({eventsList.length})</span>
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="p-3 space-y-2">
-              {eventsList.map((ev) => {
-                const isActive = ev.id === activeEvent.id;
-                return (
-                  <div
-                    key={ev.id}
-                    className={`p-2.5 rounded-lg border transition-all text-left flex flex-col gap-1.5 ${
-                      isActive
-                        ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20'
-                        : 'border-border bg-card'
-                    }`}
+                {/* Daily Scan Requirement */}
+                <Field className="gap-1">
+                  <FieldLabel htmlFor="scan-mode" className="text-xs font-medium text-foreground">
+                    Daily Scan Requirement
+                  </FieldLabel>
+                  <Select
+                    value={scanMode}
+                    onValueChange={(val) => handleScanModeChange(val as EventScanMode)}
                   >
-                    <div className="flex items-start justify-between gap-1">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-xs text-foreground truncate block">
-                            {ev.title}
-                          </span>
-                          {isActive && (
-                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
-                              ACTIVE
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[10.5px] font-mono text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                          <span>{ev.totalDays}d</span>
-                          <span>·</span>
-                          <span className="px-1 py-0.2 rounded bg-muted text-[10px] text-foreground font-sans">
-                            {ev.scanMode === '2-slots' ? '2 Scans/d' : '4 Scans/d'}
-                          </span>
-                          <span>·</span>
-                          <span>{ev.days[0]?.date} - {ev.days[ev.days.length - 1]?.date}</span>
-                        </span>
-                      </div>
+                    <SelectTrigger id="scan-mode" className="h-9 text-xs">
+                      <SelectValue placeholder="Select requirement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="4-slots">
+                        Morning & Afternoon (Time In & Time Out) · 4 scans/day
+                      </SelectItem>
+                      <SelectItem value="2-slots">
+                        Morning Time In & Afternoon Time Out only · 2 scans/day
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-                      {!isActive && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteEvent(ev.id, e)}
-                          className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer shrink-0"
-                          title="Delete"
-                        >
-                          <Trash2 className="size-3" />
-                        </button>
-                      )}
-                    </div>
+                {/* Schedule Days */}
+                <Field className="gap-1.5">
+                  <FieldLabel className="text-xs font-medium text-foreground">
+                    Schedule ({numDays} Days)
+                  </FieldLabel>
 
-                    {!isActive && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSetActiveExisting(ev)}
-                        className="w-full h-6 text-[10px] font-medium gap-1 cursor-pointer mt-0.5"
+                  <div className="space-y-1.5">
+                    {daysSchedule.map((dayItem, idx) => (
+                      <div
+                        key={dayItem.day}
+                        className="p-2 rounded-lg border border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-2"
                       >
-                        <Check className="size-2.5" />
-                        <span>Activate</span>
-                      </Button>
-                    )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px] shrink-0 border border-primary/20 w-14 text-center">
+                            {dayItem.day}
+                          </span>
+
+                          <DatePicker
+                            date={
+                              new Date(
+                                (dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)) +
+                                  'T00:00:00'
+                              )
+                            }
+                            onSelect={(d) => {
+                              if (d) {
+                                const yyyy = d.getFullYear();
+                                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                const dd = String(d.getDate()).padStart(2, '0');
+                                handleDayIsoDateChange(idx, `${yyyy}-${mm}-${dd}`);
+                              }
+                            }}
+                            buttonClassName="w-[105px]"
+                          />
+                        </div>
+
+                        <Input
+                          value={dayItem.theme || ''}
+                          onChange={(e) => handleDayThemeChange(idx, e.target.value)}
+                          placeholder="Theme (optional)"
+                          className="h-7 text-xs flex-1 bg-background"
+                        />
+
+                        <Select
+                          value={dayItem.scanMode || scanMode}
+                          onValueChange={(val) => handleDayScanModeChange(idx, val as EventScanMode)}
+                        >
+                          <SelectTrigger className="h-7 w-full sm:w-[130px] text-[11px] shrink-0 bg-background font-medium">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="4-slots" className="text-xs">
+                              4 Scans (In/Out AM & PM)
+                            </SelectItem>
+                            <SelectItem value="2-slots" className="text-xs">
+                              2 Scans (AM In, PM Out)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                </Field>
+              </FieldGroup>
+            </div>
+
+            <DialogFooter className="p-4 border-t border-border/40 bg-muted/20 flex flex-row items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateDialogOpen(false)}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 px-4 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Check className="size-3.5" />
+                <span>Create & Activate Event</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Event Schedule Details Dialog */}
+      <Dialog
+        open={!!viewingEvent}
+        onOpenChange={(open) => !open && setViewingEvent(null)}
+      >
+        {viewingEvent && (
+          <DialogContent className="max-w-md p-5 rounded-2xl">
+            <DialogHeader className="text-left pb-2 border-b border-border/40">
+              <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+                <Calendar className="size-4 text-primary" />
+                <span>{viewingEvent.title}</span>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                {viewingEvent.department} · {viewingEvent.totalDays} Days Schedule
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2 py-3 max-h-[60vh] overflow-y-auto">
+              {viewingEvent.days.map((d, i) => (
+                <div
+                  key={d.day || i}
+                  className="p-2.5 rounded-lg border border-border/70 bg-muted/20 flex items-center justify-between text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px]">
+                      {d.day}
+                    </span>
+                    <div>
+                      <span className="font-semibold block text-foreground">{d.theme || 'General Attendance'}</span>
+                      <span className="text-[11px] text-muted-foreground font-mono">{d.date}</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-card">
+                    {d.scanMode === '2-slots' ? '2 Scans' : '4 Scans'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setViewingEvent(null)}
+                className="w-full text-xs h-8 cursor-pointer"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 };
