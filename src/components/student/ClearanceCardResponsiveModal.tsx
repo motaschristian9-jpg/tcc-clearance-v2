@@ -21,9 +21,7 @@ import { Button } from '@/components/ui/button';
 import {
   Download,
   CheckCircle2,
-  ShieldCheck,
   Sparkles,
-  Award,
 } from 'lucide-react';
 import { ClearanceEvent, DayAttendance } from '@/types/attendance';
 import { generateClearanceCardPdf } from '@/lib/pdf';
@@ -68,7 +66,6 @@ export const ClearanceCardResponsiveModal: React.FC<ClearanceCardResponsiveModal
   }, 0);
 
   const percent = totalSlots > 0 ? Math.round((clearedSlotsCount / totalSlots) * 100) : 0;
-  const isCompleted = totalSlots > 0 && clearedSlotsCount >= totalSlots;
 
   const handleExportPdf = async () => {
     setIsExporting(true);
@@ -253,33 +250,6 @@ export const ClearanceCardResponsiveModal: React.FC<ClearanceCardResponsiveModal
               </Card>
             );
           })}
-        </div>
-
-        {/* Official Clearance Verification Banner */}
-        <div className="p-4 rounded-xl border border-border bg-card shadow-2xs space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="size-4 text-primary" />
-              <h4 className="text-xs font-semibold text-foreground">
-                TCC Official Clearance Status
-              </h4>
-            </div>
-            {isCompleted ? (
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                <Award className="size-4" />
-                Officially Cleared
-              </span>
-            ) : (
-              <span className="text-xs font-medium text-muted-foreground">
-                Incomplete ({totalSlots - clearedSlotsCount} remaining)
-              </span>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Attendance slots are recorded and cryptographically stamped by authorized SBO officers
-            at the gate terminal during entrance and egress. Export your official PDF certificate
-            for semester archiving or administrative verification.
-          </p>
         </div>
       </div>
     </div>
