@@ -394,7 +394,7 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                       Schedule ({numDays} Days)
                     </FieldLabel>
 
-                    <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
+                    <div className="space-y-1.5">
                       {daysSchedule.map((dayItem, idx) => (
                         <div
                           key={dayItem.day}

@@ -26,7 +26,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
 
-  const formattedDate = date
+  const formattedDate = date && !isNaN(date.getTime())
     ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     : "";
 
@@ -34,10 +34,11 @@ export function DatePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           className={cn(
-            "h-7 px-2.5 text-xs font-mono justify-between text-left font-normal bg-background hover:bg-muted/40 shadow-2xs border-border",
-            !date && "text-muted-foreground",
+            "h-7 px-2.5 text-xs font-mono justify-between text-left font-normal bg-background hover:bg-muted/40 shadow-2xs border-border cursor-pointer select-none",
+            !formattedDate && "text-muted-foreground",
             buttonClassName
           )}
         >
@@ -50,12 +51,12 @@ export function DatePicker({
       <PopoverContent className={cn("w-auto p-0", className)} align="start">
         <Calendar
           mode="single"
-          selected={date}
+          selected={date && !isNaN(date.getTime()) ? date : undefined}
           onSelect={(selectedDate) => {
             onSelect?.(selectedDate);
             setOpen(false);
           }}
-          initialMonth={date}
+          initialMonth={date && !isNaN(date.getTime()) ? date : new Date()}
         />
       </PopoverContent>
     </Popover>
@@ -63,4 +64,3 @@ export function DatePicker({
 }
 
 export default DatePicker;
-

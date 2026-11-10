@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface PopoverContextValue {
@@ -66,6 +67,8 @@ export function PopoverTrigger({
   const { open, setOpen, triggerRef } = usePopover();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     onClick?.(e);
     setOpen(!open);
   };
@@ -73,6 +76,7 @@ export function PopoverTrigger({
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, {
       ref: triggerRef,
+      type: "button",
       onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
         (children as any).props?.onClick?.(e);
         handleClick(e);
@@ -110,9 +114,40 @@ export function PopoverContent({
 }: PopoverContentProps) {
   const { open, setOpen, triggerRef } = usePopover();
   const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const [coords, setCoords] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   React.useEffect(() => {
     if (!open) return;
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      const contentEl = contentRef.current;
+      const contentWidth = contentEl ? contentEl.offsetWidth : 260;
+      const contentHeight = contentEl ? contentEl.offsetHeight : 280;
+
+      let left = rect.left;
+      if (align === "center") {
+        left = rect.left + rect.width / 2 - contentWidth / 2;
+      } else if (align === "end") {
+        left = rect.right - contentWidth;
+      }
+
+      // Constrain left within viewport
+      left = Math.max(8, Math.min(window.innerWidth - contentWidth - 8, left));
+
+      // Decide if popover fits below or above trigger
+      let top = rect.bottom + 4;
+      if (top + contentHeight > window.innerHeight && rect.top - contentHeight - 4 > 0) {
+        top = rect.top - contentHeight - 4;
+      }
+
+      setCoords({ top, left });
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
 
     function handleMouseDown(e: MouseEvent) {
       if (
@@ -131,35 +166,45 @@ export function PopoverContent({
       }
     }
 
-    document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("keydown", handleKeyDown);
+    // Delay attaching to next tick so current click doesn't close it
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleMouseDown);
+      document.addEventListener("keydown", handleKeyDown);
+    }, 10);
+
     return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
       document.removeEventListener("mousedown", handleMouseDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, setOpen, triggerRef]);
+  }, [open, setOpen, triggerRef, align]);
 
   if (!open) return null;
 
-  const alignClasses = {
-    start: "left-0",
-    center: "left-1/2 -translate-x-1/2",
-    end: "right-0",
-  }[align];
+  if (typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       ref={contentRef}
       role="dialog"
+      style={{
+        position: "fixed",
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
+        zIndex: 99999,
+      }}
       className={cn(
-        "absolute z-50 mt-1 min-w-[180px] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95",
-        alignClasses,
+        "rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl outline-none animate-in fade-in-0 zoom-in-95",
         className
       )}
       {...props}
     >
       {children}
-    </div>
+    </div>,
+    document.body
   );
 }
 
+export default Popover;
