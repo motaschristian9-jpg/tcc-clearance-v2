@@ -763,8 +763,21 @@ export const App: React.FC = () => {
                 photoDataUrl={photoDataUrl}
                 userEmail={authUser?.email || 'student@tcc.edu.ph'}
                 attendanceRecords={attendanceRecords}
+                activeEvent={activeEvent}
                 onOpenQrPass={() => setShowPassModal(true)}
-                onViewActivityCard={(_id) => setCurrentScreen('activity-card')}
+                onViewActivityCard={(activityId) => {
+                  try {
+                    const saved = localStorage.getItem('TCC_ALL_EVENTS_LIST');
+                    if (saved) {
+                      const list = JSON.parse(saved);
+                      const target = Array.isArray(list) ? list.find((e: ClearanceEvent) => e.id === activityId) : null;
+                      if (target && target.id !== activeEvent.id) {
+                        handleUpdateActiveEvent(target);
+                      }
+                    }
+                  } catch {}
+                  setCurrentScreen('activity-card');
+                }}
                 onSignOut={() => setShowSignOutDialog(true)}
                 onEditProfile={() => setShowEditProfileModal(true)}
               />

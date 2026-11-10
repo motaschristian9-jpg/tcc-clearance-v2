@@ -22,7 +22,7 @@ import {
   FileCheck2,
   RefreshCw,
 } from 'lucide-react';
-import { DayAttendance } from '@/types/attendance';
+import { DayAttendance, ClearanceEvent, DEFAULT_ACTIVE_EVENT } from '@/types/attendance';
 import { fetchPublishedEvents } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -48,6 +48,7 @@ interface StudentDashboardProps {
   photoDataUrl: string | null;
   userEmail: string;
   attendanceRecords: DayAttendance[];
+  activeEvent?: ClearanceEvent;
   onOpenQrPass: () => void;
   onViewActivityCard: (activityId: string) => void;
   onSignOut: () => void;
@@ -62,6 +63,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   photoDataUrl,
   userEmail,
   attendanceRecords,
+  activeEvent,
   onOpenQrPass,
   onViewActivityCard,
   onEditProfile,
@@ -70,24 +72,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [filter, setFilter] = useState<'all' | 'ongoing' | 'upcoming'>('all');
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
 
-  // Real activities loaded from database (zero mock items by default)
+  // Real activities loaded from database and SBO officer clearance events
   const [activities, setActivities] = useState<ClearanceActivity[]>([]);
-
-  const loadEvents = async () => {
-    setIsLoadingEvents(true);
-    try {
-      const liveEvents = await fetchPublishedEvents(department);
-      setActivities(liveEvents);
-    } catch (err) {
-      console.warn('Failed to load events:', err);
-    } finally {
-      setIsLoadingEvents(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-  }, [department]);
 
   // Real calculation of cleared slots directly from attendanceRecords
   const totalClearedSlots = attendanceRecords.reduce((acc, curr) => {
@@ -98,6 +84,87 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     if (curr.slots['afternoon-out']) count++;
     return acc + count;
   }, 0);
+
+  const loadEvents = async () => {
+    setIsLoadingEvents(true);
+    try {
+      // 1. Fetch remote published events from Supabase
+      const remoteEvents = await fetchPublishedEvents(department);
+
+      // 2. Fetch local clearance events created by SBO Officers
+      let localEvents: ClearanceEvent[] = [];
+      try {
+        const saved = localStorage.getItem('TCC_ALL_EVENTS_LIST');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) localEvents = parsed;
+        }
+      } catch {}
+
+      if (localEvents.length === 0) {
+        localEvents = [activeEvent || DEFAULT_ACTIVE_EVENT];
+      } else if (activeEvent && !localEvents.some((e) => e.id === activeEvent.id)) {
+        localEvents = [activeEvent, ...localEvents];
+      }
+
+      // Filter events matching the student's department or 'All Departments'
+      const relevantLocalEvents = localEvents.filter(
+        (ev) => !ev.department || ev.department === 'All Departments' || ev.department === department
+      );
+
+      // Map ClearanceEvent objects to ClearanceActivity
+      const mappedLocalActivities: ClearanceActivity[] = relevantLocalEvents.map((ev) => {
+        const isActive = (activeEvent && activeEvent.id === ev.id) || ev.status === 'active';
+        const totalSlots = Array.isArray(ev.days)
+          ? ev.days.reduce((acc, d) => {
+              const mode = d.scanMode || ev.scanMode || '4-slots';
+              return acc + (mode === '2-slots' ? 2 : 4);
+            }, 0)
+          : (ev.totalDays || 5) * 4;
+
+        const firstDate = ev.days?.[0]?.date || 'Day 1';
+        const lastDate = ev.days?.[ev.days.length - 1]?.date || `Day ${ev.totalDays || 5}`;
+
+        return {
+          id: ev.id,
+          title: ev.title,
+          category: `${ev.department || 'TCC'} · Clearance Event`,
+          dateRange: `${firstDate} – ${lastDate}, ${ev.schoolYear || '2025-2026'}`,
+          venue: 'TCC Main Campus Ground',
+          totalSlots,
+          clearedSlots: isActive ? totalClearedSlots : 0,
+          status: isActive ? 'ongoing' : 'upcoming',
+          isDownloadedOffline: true,
+        };
+      });
+
+      // Combine local activities and remote activities (deduplicating by ID/title)
+      const combined = [...mappedLocalActivities];
+      remoteEvents.forEach((rem) => {
+        if (!combined.some((c) => c.id === rem.id || c.title.toLowerCase() === rem.title.toLowerCase())) {
+          combined.push(rem);
+        }
+      });
+
+      setActivities(combined);
+    } catch (err) {
+      console.warn('Failed to load events:', err);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEvents();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'TCC_ALL_EVENTS_LIST' || e.key === 'TCC_ACTIVE_EVENT') {
+        loadEvents();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [department, activeEvent, totalClearedSlots]);
 
   // Extract actual recorded stamps with officer signatory details
   const recentStamps: {
