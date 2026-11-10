@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { QrCode, FileText, ArrowLeft } from 'lucide-react';
+import { createCompressedThumbnail } from '@/lib/thumbnail';
 
 interface StudentPassCardProps {
   fullName: string;
@@ -34,9 +35,24 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
 }) => {
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [embeddedPhoto, setEmbeddedPhoto] = useState<string | null>(null);
 
   // Compute 30-second epoch token
   const currentEpoch = Math.floor(Date.now() / 30000) * 30000;
+
+  useEffect(() => {
+    let active = true;
+    if (photoDataUrl) {
+      createCompressedThumbnail(photoDataUrl, 44, 0.45).then((thumb) => {
+        if (active) setEmbeddedPhoto(thumb);
+      });
+    } else {
+      setEmbeddedPhoto(null);
+    }
+    return () => {
+      active = false;
+    };
+  }, [photoDataUrl]);
 
   useEffect(() => {
     const passPayload = JSON.stringify({
@@ -44,7 +60,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
       name: fullName || 'Student',
       dept: department || 'CIT',
       sec: section || '---',
-      photo: photoDataUrl && photoDataUrl.startsWith('http') ? photoDataUrl : undefined,
+      photo: embeddedPhoto || undefined,
       epoch: currentEpoch,
       v: 1,
     });
@@ -56,7 +72,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
         dark: '#0a0a0a',
         light: '#ffffff',
       },
-      errorCorrectionLevel: 'M',
+      errorCorrectionLevel: 'L',
     })
       .then((svg) => {
         setQrSvg(svg);
@@ -72,7 +88,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
         dark: '#0a0a0a',
         light: '#ffffff',
       },
-      errorCorrectionLevel: 'M',
+      errorCorrectionLevel: 'L',
     })
       .then((url) => {
         setQrDataUrl(url);
@@ -80,7 +96,7 @@ export const StudentPassCard: React.FC<StudentPassCardProps> = ({
       .catch((err) => {
         console.warn('Failed to render pass QR data URL:', err);
       });
-  }, [schoolId, fullName, department, section, photoDataUrl, currentEpoch]);
+  }, [schoolId, fullName, department, section, embeddedPhoto, currentEpoch]);
 
   return (
     <div className="w-full max-w-md mx-auto py-4">

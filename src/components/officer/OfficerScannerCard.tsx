@@ -127,7 +127,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                     try {
                       const payload = JSON.parse(raw);
                       const scannedSchoolId = payload.tcc_id || payload.schoolId || '---';
-                      const directPhoto = payload.photo || payload.photoUrl || currentStudent.photoDataUrl || null;
+                      const directPhoto = payload.photo || payload.thumb || payload.photoUrl || currentStudent.photoDataUrl || null;
                       setScannedResult({
                         fullName: payload.name || payload.fullName || 'Student',
                         schoolId: scannedSchoolId,
@@ -138,6 +138,12 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                         deviceKeyValid: true,
                       });
                       setIsScanning(false);
+
+                      if (directPhoto && scannedSchoolId !== '---') {
+                        try {
+                          localStorage.setItem(`TCC_STUDENT_PHOTO_${scannedSchoolId}`, directPhoto);
+                        } catch {}
+                      }
 
                       // Asynchronously fetch photo from cache or Supabase if not embedded
                       if (!directPhoto && scannedSchoolId !== '---') {
@@ -329,7 +335,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                     <img
                       src={scannedResult.photoDataUrl}
                       alt={scannedResult.fullName}
-                      className="size-full object-cover scale-x-[-1]"
+                      className="size-full object-cover"
                     />
                   ) : (
                     <div className="size-full flex items-center justify-center text-muted-foreground text-xs font-semibold">

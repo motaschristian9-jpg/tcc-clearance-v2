@@ -19,6 +19,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { QrCode, FileText } from "lucide-react";
+import { createCompressedThumbnail } from "@/lib/thumbnail";
 
 interface StudentPassResponsiveModalProps {
   open: boolean;
@@ -46,9 +47,24 @@ export function StudentPassResponsiveModal({
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [qrSvg, setQrSvg] = React.useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+  const [embeddedPhoto, setEmbeddedPhoto] = React.useState<string | null>(null);
 
   // Compute 30-second epoch token
   const currentEpoch = Math.floor(Date.now() / 30000) * 30000;
+
+  React.useEffect(() => {
+    let active = true;
+    if (photoDataUrl) {
+      createCompressedThumbnail(photoDataUrl, 44, 0.45).then((thumb) => {
+        if (active) setEmbeddedPhoto(thumb);
+      });
+    } else {
+      setEmbeddedPhoto(null);
+    }
+    return () => {
+      active = false;
+    };
+  }, [photoDataUrl]);
 
   React.useEffect(() => {
     const passPayload = JSON.stringify({
@@ -56,7 +72,7 @@ export function StudentPassResponsiveModal({
       name: fullName || "Student",
       dept: department || "CIT",
       sec: section || "---",
-      photo: photoDataUrl && photoDataUrl.startsWith("http") ? photoDataUrl : undefined,
+      photo: embeddedPhoto || undefined,
       epoch: currentEpoch,
       v: 1,
     });
@@ -69,7 +85,7 @@ export function StudentPassResponsiveModal({
         dark: "#0a0a0a",
         light: "#ffffff",
       },
-      errorCorrectionLevel: "M",
+      errorCorrectionLevel: "L",
     })
       .then((svg) => {
         setQrSvg(svg);
@@ -86,7 +102,7 @@ export function StudentPassResponsiveModal({
         dark: "#0a0a0a",
         light: "#ffffff",
       },
-      errorCorrectionLevel: "M",
+      errorCorrectionLevel: "L",
     })
       .then((url) => {
         setQrDataUrl(url);
@@ -94,7 +110,7 @@ export function StudentPassResponsiveModal({
       .catch((err) => {
         console.warn("Failed to generate QR data URL:", err);
       });
-  }, [schoolId, fullName, department, section, photoDataUrl, currentEpoch]);
+  }, [schoolId, fullName, department, section, embeddedPhoto, currentEpoch]);
 
   const PassBody = (
     <div className="flex flex-col items-center gap-3 py-1 w-full">
