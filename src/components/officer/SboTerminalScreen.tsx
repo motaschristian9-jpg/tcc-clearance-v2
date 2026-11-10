@@ -129,9 +129,9 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
     <div className="w-full flex flex-col flex-1 max-w-6xl mx-auto px-2 sm:px-4">
       {/* Top Left Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-border/60 pb-3">
+        <div className="flex items-center justify-between mb-6 border-b border-border/60 pb-3">
           {/* Upper Left Tabs List */}
-          <TabsList className="bg-muted/80 p-1 rounded-xl border border-border/60 self-start h-10 shadow-2xs">
+          <TabsList className="bg-muted/80 p-1 rounded-xl border border-border/60 h-10 shadow-2xs">
             <TabsTrigger
               value="clearance"
               className="gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg cursor-pointer"
@@ -148,19 +148,6 @@ export const SboTerminalScreen: React.FC<SboTerminalScreenProps> = ({
               <span>Events</span>
             </TabsTrigger>
           </TabsList>
-
-          {/* Upper Right Active Event Indicator */}
-          <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-card shadow-2xs">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-foreground truncate max-w-[200px] sm:max-w-[260px]">
-                {activeEvent.title}
-              </span>
-              <span className="font-mono text-[11px] text-primary font-bold">
-                {activeEvent.totalDays}D
-              </span>
-            </span>
-          </div>
         </div>
 
         {/* Tab 1: Gate Clearance (Live Scanner & Live Feed) */}

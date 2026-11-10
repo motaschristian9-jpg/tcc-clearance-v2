@@ -1,10 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel, FieldGroup } from '@/components/ui/field';
@@ -32,13 +26,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  CalendarDays,
   CalendarPlus,
   Check,
   Trash2,
   Plus,
   Eye,
   Calendar,
+  Search,
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from 'sonner';
@@ -180,9 +174,10 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     ];
   });
 
-  // Dialog controls
+  // Dialog and filter controls
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false);
   const [viewingEvent, setViewingEvent] = useState<ClearanceEvent | null>(null);
+  const [filterText, setFilterText] = useState<string>('');
 
   // Form states for creating event
   const [eventTitle, setEventTitle] = useState('');
@@ -317,176 +312,191 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     toast.success('Event removed');
   };
 
+  const filteredEvents = eventsList.filter((ev) => {
+    if (!filterText.trim()) return true;
+    const q = filterText.toLowerCase();
+    return (
+      ev.title.toLowerCase().includes(q) ||
+      ev.department.toLowerCase().includes(q) ||
+      (ev.schoolYear && ev.schoolYear.toLowerCase().includes(q))
+    );
+  });
+
   return (
-    <div className="w-full space-y-4">
-      {/* Events Table Card */}
-      <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
-        <CardHeader className="py-4 px-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="space-y-0.5">
-            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-              <CalendarDays className="size-4 text-primary" />
-              <span>Clearance Events</span>
-              <span className="text-xs font-mono font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                {eventsList.length}
-              </span>
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Configure campus events, duty schedules, and active gate clearance requirements.
-            </p>
+    <div className="w-full space-y-3.5">
+      {/* Shadcn Data Table Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1 max-w-xs">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Filter events..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className="pl-8 h-8 text-xs bg-card"
+            />
           </div>
+        </div>
 
-          <Button
-            type="button"
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="h-8 px-3.5 text-xs font-medium gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
-          >
-            <Plus className="size-3.5" />
-            <span>Add Event</span>
-          </Button>
-        </CardHeader>
+        <Button
+          type="button"
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="h-8 px-3.5 text-xs font-medium gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+        >
+          <Plus className="size-3.5" />
+          <span>Add Event</span>
+        </Button>
+      </div>
 
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/20 hover:bg-muted/20">
-                <TableHead className="w-[300px] pl-6 text-xs font-semibold text-foreground">
-                  Event & Scope
-                </TableHead>
-                <TableHead className="text-xs font-semibold text-foreground">
-                  Schedule & Dates
-                </TableHead>
-                <TableHead className="text-xs font-semibold text-foreground">
-                  Daily Requirement
-                </TableHead>
-                <TableHead className="text-xs font-semibold text-foreground">
-                  Status
-                </TableHead>
-                <TableHead className="text-right pr-6 text-xs font-semibold text-foreground">
-                  Actions
-                </TableHead>
+      {/* Shadcn Table in Rounded Border Container */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent bg-muted/40 border-b">
+              <TableHead className="w-[300px] pl-4 text-xs font-medium text-foreground">
+                Event & Department
+              </TableHead>
+              <TableHead className="text-xs font-medium text-foreground">
+                Schedule & Dates
+              </TableHead>
+              <TableHead className="text-xs font-medium text-foreground">
+                Daily Requirement
+              </TableHead>
+              <TableHead className="text-xs font-medium text-foreground">
+                Status
+              </TableHead>
+              <TableHead className="text-right pr-4 text-xs font-medium text-foreground">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredEvents.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-xs text-muted-foreground">
+                  No events found.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {eventsList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-xs text-muted-foreground">
-                    No clearance events found. Click "Add Event" to create one.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                eventsList.map((ev) => {
-                  const isActive = ev.id === activeEvent.id;
-                  const firstDate = ev.days[0]?.date || 'Day 1';
-                  const lastDate = ev.days[ev.days.length - 1]?.date || `Day ${ev.totalDays}`;
+            ) : (
+              filteredEvents.map((ev) => {
+                const isActive = ev.id === activeEvent.id;
+                const firstDate = ev.days[0]?.date || 'Day 1';
+                const lastDate = ev.days[ev.days.length - 1]?.date || `Day ${ev.totalDays}`;
 
-                  return (
-                    <TableRow
-                      key={ev.id}
-                      className={isActive ? 'bg-primary/[0.03] hover:bg-primary/[0.06]' : undefined}
-                    >
-                      {/* Event Title & Department Scope */}
-                      <TableCell className="pl-6 py-3.5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
-                            {ev.title}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            {ev.department} · {ev.schoolYear || '2025-2026'}
-                          </span>
-                        </div>
-                      </TableCell>
+                return (
+                  <TableRow
+                    key={ev.id}
+                    className={isActive ? 'bg-primary/[0.03] hover:bg-primary/[0.06]' : undefined}
+                  >
+                    {/* Event Title & Department Scope */}
+                    <TableCell className="pl-4 py-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                          {ev.title}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {ev.department} · {ev.schoolYear || '2025-2026'}
+                        </span>
+                      </div>
+                    </TableCell>
 
-                      {/* Schedule & Dates */}
-                      <TableCell className="py-3.5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium font-mono text-foreground">
-                            {ev.totalDays} {ev.totalDays === 1 ? 'Day' : 'Days'}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground font-mono">
-                            {firstDate} – {lastDate}
-                          </span>
-                        </div>
-                      </TableCell>
+                    {/* Schedule & Dates */}
+                    <TableCell className="py-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium font-mono text-foreground">
+                          {ev.totalDays} {ev.totalDays === 1 ? 'Day' : 'Days'}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground font-mono">
+                          {firstDate} – {lastDate}
+                        </span>
+                      </div>
+                    </TableCell>
 
-                      {/* Daily Scan Requirement */}
-                      <TableCell className="py-3.5">
-                        {ev.scanMode === '2-slots' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-                            2 Scans (AM In, PM Out)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
-                            4 Scans (In/Out AM & PM)
-                          </span>
-                        )}
-                      </TableCell>
+                    {/* Daily Scan Requirement */}
+                    <TableCell className="py-3">
+                      {ev.scanMode === '2-slots' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                          2 Scans (AM In, PM Out)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                          4 Scans (In/Out AM & PM)
+                        </span>
+                      )}
+                    </TableCell>
 
-                      {/* Status */}
-                      <TableCell className="py-3.5">
-                        {isActive ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>Active Duty</span>
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground font-medium">
-                            Upcoming
-                          </span>
-                        )}
-                      </TableCell>
+                    {/* Status */}
+                    <TableCell className="py-3">
+                      {isActive ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>Active Duty</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium">
+                          Upcoming
+                        </span>
+                      )}
+                    </TableCell>
 
-                      {/* Actions */}
-                      <TableCell className="text-right pr-6 py-3.5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {!isActive ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleSetActiveExisting(ev)}
-                              className="h-7 px-2.5 text-xs font-medium cursor-pointer"
-                            >
-                              Activate
-                            </Button>
-                          ) : (
-                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2">
-                              <Check className="size-3.5" />
-                              <span>Active</span>
-                            </span>
-                          )}
-
+                    {/* Actions */}
+                    <TableCell className="text-right pr-4 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {!isActive ? (
                           <Button
                             type="button"
                             size="sm"
-                            variant="ghost"
-                            onClick={() => setViewingEvent(ev)}
-                            title="View Daily Schedule"
-                            className="h-7 w-7 p-0 cursor-pointer text-muted-foreground hover:text-foreground"
+                            variant="outline"
+                            onClick={() => handleSetActiveExisting(ev)}
+                            className="h-7 px-2.5 text-xs font-medium cursor-pointer"
                           >
-                            <Eye className="size-3.5" />
+                            Activate
                           </Button>
+                        ) : (
+                          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2">
+                            <Check className="size-3.5" />
+                            <span>Active</span>
+                          </span>
+                        )}
 
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => handleDeleteEvent(ev.id, e)}
-                            disabled={isActive}
-                            title={isActive ? 'Active event cannot be deleted' : 'Delete event'}
-                            className="h-7 w-7 p-0 cursor-pointer text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:pointer-events-none"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setViewingEvent(ev)}
+                          title="View Daily Schedule"
+                          className="h-7 w-7 p-0 cursor-pointer text-muted-foreground hover:text-foreground"
+                        >
+                          <Eye className="size-3.5" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => handleDeleteEvent(ev.id, e)}
+                          disabled={isActive}
+                          title={isActive ? 'Active event cannot be deleted' : 'Delete event'}
+                          className="h-7 w-7 p-0 cursor-pointer text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Data Table Footer */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+        <span>
+          Showing {filteredEvents.length} of {eventsList.length} event(s)
+        </span>
+      </div>
 
       {/* Add Event Dialog (Preserves the exact create event field design) */}
       <Dialog
