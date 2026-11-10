@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import jsQR from 'jsqr';
 import {
   Card,
   CardHeader,
@@ -37,6 +38,8 @@ import {
   UserCheck,
   BadgeCheck,
   QrCode,
+  AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { fetchStudentPhotoBySchoolId } from '@/lib/supabase';
 
@@ -77,6 +80,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [scannedResult, setScannedResult] = useState<ScannedStudentPayload | null>(null);
   const [lastApprovedMsg, setLastApprovedMsg] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Dynamic slot availability based on day's scan configuration (4-slots vs 2-slots)
   const currentDayConfig = availableDays.find((d) => d.day === selectedDay);
@@ -92,17 +96,80 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Initialize camera and real-time QR detection loop
+  const processScannedPayload = useCallback((raw: string) => {
+    try {
+      const payload = JSON.parse(raw);
+      const scannedSchoolId = payload.tcc_id || payload.schoolId || '---';
+      const directPhoto =
+        payload.photo ||
+        payload.thumb ||
+        payload.photoUrl ||
+        (scannedSchoolId === currentStudent.schoolId ? currentStudent.photoDataUrl : null);
+
+      setScannedResult({
+        fullName: payload.name || payload.fullName || 'Student',
+        schoolId: scannedSchoolId,
+        department: payload.dept || payload.department || officer.department,
+        section: payload.sec || payload.section || '---',
+        photoDataUrl: directPhoto,
+        timestamp: payload.epoch || Date.now(),
+        deviceKeyValid: true,
+      });
+      setIsScanning(false);
+
+      if (directPhoto && scannedSchoolId !== '---') {
+        try {
+          localStorage.setItem(`TCC_STUDENT_PHOTO_${scannedSchoolId}`, directPhoto);
+        } catch {}
+      }
+
+      // Asynchronously fetch photo from cache or Supabase if not embedded
+      if (!directPhoto && scannedSchoolId !== '---') {
+        fetchStudentPhotoBySchoolId(scannedSchoolId).then((resolved) => {
+          if (resolved) {
+            setScannedResult((prev) => (prev ? { ...prev, photoDataUrl: resolved } : null));
+          }
+        });
+      }
+    } catch {
+      setScannedResult({
+        fullName: raw.length > 25 ? raw.slice(0, 25) + '...' : raw,
+        schoolId: 'PASS-VERIFIED',
+        department: officer.department,
+        section: 'Official',
+        photoDataUrl: currentStudent.photoDataUrl,
+        timestamp: Date.now(),
+        deviceKeyValid: true,
+      });
+      setIsScanning(false);
+    }
+  }, [currentStudent.photoDataUrl, currentStudent.schoolId, officer.department]);
+
+  // Initialize camera and real-time QR detection loop (with jsQR fallback for 100% browser support)
   useEffect(() => {
     let active = true;
     let scanInterval: ReturnType<typeof setInterval> | null = null;
 
     async function startScanner() {
+      setCameraError(null);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 480 }, height: { ideal: 480 } },
-          audio: false,
-        });
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 640 },
+              height: { ideal: 640 },
+            },
+            audio: false,
+          });
+        } catch {
+          // Fallback to any camera if 'environment' constraint fails (e.g. laptop webcam)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+        }
 
         if (!active) {
           stream.getTracks().forEach((t) => t.stop());
@@ -112,71 +179,69 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
         }
 
-        // Live hardware-accelerated QR code frame detection if supported
+        // Initialize hardware detector if available
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let detector: any = null;
         if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
           try {
-            const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-            scanInterval = setInterval(async () => {
-              if (active && videoRef.current && videoRef.current.readyState >= 2) {
-                try {
-                  const barcodes = await detector.detect(videoRef.current);
-                  if (barcodes && barcodes.length > 0) {
-                    const raw = barcodes[0].rawValue;
-                    try {
-                      const payload = JSON.parse(raw);
-                      const scannedSchoolId = payload.tcc_id || payload.schoolId || '---';
-                      const directPhoto = payload.photo || payload.thumb || payload.photoUrl || currentStudent.photoDataUrl || null;
-                      setScannedResult({
-                        fullName: payload.name || payload.fullName || 'Student',
-                        schoolId: scannedSchoolId,
-                        department: payload.dept || payload.department || officer.department,
-                        section: payload.sec || payload.section || '---',
-                        photoDataUrl: directPhoto,
-                        timestamp: payload.epoch || Date.now(),
-                        deviceKeyValid: true,
-                      });
-                      setIsScanning(false);
-
-                      if (directPhoto && scannedSchoolId !== '---') {
-                        try {
-                          localStorage.setItem(`TCC_STUDENT_PHOTO_${scannedSchoolId}`, directPhoto);
-                        } catch {}
-                      }
-
-                      // Asynchronously fetch photo from cache or Supabase if not embedded
-                      if (!directPhoto && scannedSchoolId !== '---') {
-                        fetchStudentPhotoBySchoolId(scannedSchoolId).then((resolved) => {
-                          if (resolved) {
-                            setScannedResult((prev) => (prev ? { ...prev, photoDataUrl: resolved } : null));
-                          }
-                        });
-                      }
-                    } catch {
-                      setScannedResult({
-                        fullName: raw.length > 25 ? raw.slice(0, 25) + '...' : raw,
-                        schoolId: 'PASS-VERIFIED',
-                        department: officer.department,
-                        section: 'Official',
-                        photoDataUrl: currentStudent.photoDataUrl,
-                        timestamp: Date.now(),
-                        deviceKeyValid: true,
-                      });
-                      setIsScanning(false);
-                    }
-                  }
-                } catch {
-                  // ignore frame decoding errors
-                }
-              }
-            }, 300);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
           } catch {
-            // barcode detector unavailable
+            detector = null;
           }
         }
-      } catch {
-        // Fallback gracefully if camera unavailable (e.g. desktop without webcam)
+
+        // Canvas for jsQR frame extraction
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        scanInterval = setInterval(async () => {
+          if (!active || !videoRef.current || videoRef.current.readyState < 2) return;
+          const video = videoRef.current;
+
+          // Attempt 1: Native BarcodeDetector (fast hardware acceleration where supported)
+          if (detector) {
+            try {
+              const barcodes = await detector.detect(video);
+              if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                processScannedPayload(barcodes[0].rawValue);
+                return;
+              }
+            } catch {
+              // fallback to jsQR
+            }
+          }
+
+          // Attempt 2: Universal jsQR (works on ALL iOS/Android/Desktop browsers)
+          if (ctx && video.videoWidth > 0 && video.videoHeight > 0) {
+            try {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const qr = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: 'dontInvert',
+              });
+              if (qr && qr.data) {
+                processScannedPayload(qr.data);
+                return;
+              }
+            } catch {
+              // ignore frame read error
+            }
+          }
+        }, 220);
+      } catch (err: unknown) {
+        console.warn('Camera failed to start:', err);
+        const errName = err instanceof Error ? err.name : '';
+        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+          setCameraError('Camera permission was denied. Please allow camera permissions in your browser address bar.');
+        } else {
+          setCameraError('Unable to access camera. Please ensure permissions are granted and no other application is using it.');
+        }
       }
     }
 
@@ -191,7 +256,7 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
-  }, [isScanning, scannedResult, officer.department, currentStudent.photoDataUrl]);
+  }, [isScanning, scannedResult, processScannedPayload]);
 
   // Handle simulated / mock QR scan of current student pass
   const handleSimulateScan = () => {
@@ -396,6 +461,27 @@ export const OfficerScannerCard: React.FC<OfficerScannerCardProps> = ({
                   <span>Reject / Rescan</span>
                 </Button>
               </div>
+            </div>
+          ) : cameraError ? (
+            /* Camera Permission or Initialization Error State */
+            <div className="size-64 mx-auto rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex flex-col items-center justify-center text-center gap-3">
+              <AlertTriangle className="size-8 text-destructive" />
+              <p className="text-xs text-destructive font-medium leading-relaxed">
+                {cameraError}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCameraError(null);
+                  setIsScanning(true);
+                }}
+                className="h-8 text-xs gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="size-3.5" />
+                <span>Retry Camera</span>
+              </Button>
             </div>
           ) : (
             /* Live Camera / Scanner Viewfinder Area */
