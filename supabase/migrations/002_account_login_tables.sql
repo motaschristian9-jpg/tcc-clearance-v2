@@ -126,19 +126,6 @@ create table if not exists public.device_reset_requests (
   created_at timestamptz default now()
 );
 
--- 7. Account Login Activity Logs Table (Audit trail of all sign-ins)
-create table if not exists public.account_login_logs (
-  id uuid primary key default uuid_generate_v4(),
-  profile_id uuid references public.profiles(id) on delete cascade,
-  email text not null,
-  device_id text not null,
-  ip_address text,
-  user_agent text,
-  login_type text not null default 'google_oauth' check (login_type in ('google_oauth', 'device_rebind', 'otp_verified')),
-  status text not null default 'success' check (status in ('success', 'device_mismatch', 'failed')),
-  logged_at timestamptz default now()
-);
-
 -- 8. Audit Logs Table (General security and administrative audit)
 create table if not exists public.audit_logs (
   id uuid primary key default uuid_generate_v4(),
@@ -173,7 +160,6 @@ alter table public.sections enable row level security;
 alter table public.students enable row level security;
 alter table public.student_devices enable row level security;
 alter table public.device_reset_requests enable row level security;
-alter table public.account_login_logs enable row level security;
 alter table public.audit_logs enable row level security;
 
 -- 11. Row Level Security Policies
@@ -237,13 +223,4 @@ create policy "Students insert reset requests" on public.device_reset_requests
   for insert with check (
     student_id in (select id from public.students where profile_id = auth.uid())
   );
-
--- Account Login Logs: Student can view their own login logs
-drop policy if exists "Students read own login logs" on public.account_login_logs;
-create policy "Students read own login logs" on public.account_login_logs
-  for select using (profile_id = auth.uid());
-
-drop policy if exists "Allow insert login logs" on public.account_login_logs;
-create policy "Allow insert login logs" on public.account_login_logs
-  for insert with check (profile_id = auth.uid());
 
