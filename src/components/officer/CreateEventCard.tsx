@@ -19,6 +19,7 @@ import {
 import {
   CalendarDays,
   CalendarPlus,
+  Calendar,
   Check,
   Plus,
   Minus,
@@ -41,6 +42,43 @@ interface CreateEventCardProps {
 
 export const EVENTS_STORAGE_KEY = 'TCC_ALL_EVENTS_LIST';
 
+// Convert a date string into YYYY-MM-DD for native date picker
+function toIsoDate(dateStr: string, baseDateStr?: string, dayOffset: number = 0): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+  const currentYear = baseDateStr ? new Date(baseDateStr).getFullYear() : new Date().getFullYear();
+  const parsed = new Date(`${dateStr}, ${currentYear}`);
+  if (!isNaN(parsed.getTime())) {
+    const yyyy = parsed.getFullYear();
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  if (baseDateStr) {
+    const b = new Date(baseDateStr);
+    if (!isNaN(b.getTime())) {
+      b.setDate(b.getDate() + dayOffset);
+      const yyyy = b.getFullYear();
+      const mm = String(b.getMonth() + 1).padStart(2, '0');
+      const dd = String(b.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatIsoToBadge(isoStr: string): string {
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch {
+    return isoStr;
+  }
+}
+
 // Generate consecutive day configurations starting from a date
 function generateDays(totalDays: number, startDateStr: string, existingDays?: EventDayConfig[]): EventDayConfig[] {
   const result: EventDayConfig[] = [];
@@ -62,6 +100,10 @@ function generateDays(totalDays: number, startDateStr: string, existingDays?: Ev
     if (!isNaN(baseDate.getTime())) {
       nextDate.setDate(baseDate.getDate() + i);
     }
+    const yyyy = nextDate.getFullYear();
+    const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(nextDate.getDate()).padStart(2, '0');
+    const isoString = isNaN(nextDate.getTime()) ? '' : `${yyyy}-${mm}-${dd}`;
     const dateFormatted = isNaN(nextDate.getTime())
       ? `Day ${i + 1}`
       : nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -71,6 +113,7 @@ function generateDays(totalDays: number, startDateStr: string, existingDays?: Ev
     result.push({
       day: dayLabel,
       date: existing?.date || dateFormatted,
+      isoDate: existing?.isoDate || isoString,
       theme: existing?.theme || defaultThemes[i % defaultThemes.length],
     });
   }
@@ -140,11 +183,13 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
     });
   };
 
-  const handleDayDateChange = (index: number, newDate: string) => {
+  const handleDayIsoDateChange = (index: number, newIsoDate: string) => {
+    if (!newIsoDate) return;
+    const formatted = formatIsoToBadge(newIsoDate);
     setDaysSchedule((prev) => {
       const copy = [...prev];
       if (copy[index]) {
-        copy[index] = { ...copy[index], date: newDate };
+        copy[index] = { ...copy[index], isoDate: newIsoDate, date: formatted };
       }
       return copy;
     });
@@ -353,12 +398,34 @@ export const CreateEventCard: React.FC<CreateEventCardProps> = ({
                           <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono font-bold text-[11px] shrink-0 border border-primary/20 w-14 text-center">
                             {dayItem.day}
                           </span>
-                          <Input
-                            value={dayItem.date}
-                            onChange={(e) => handleDayDateChange(idx, e.target.value)}
-                            placeholder="Date"
-                            className="h-7 text-xs font-mono w-24 shrink-0 bg-background"
-                          />
+
+                          {/* Date Picker Button */}
+                          <div className="relative group/picker shrink-0">
+                            <div className="h-7 px-2.5 rounded-md border border-border bg-background hover:bg-muted/40 hover:border-primary/50 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs font-mono text-xs w-[105px] justify-between">
+                              <span className="font-semibold text-foreground select-none truncate">
+                                {dayItem.date}
+                              </span>
+                              <Calendar className="size-3 text-muted-foreground group-hover/picker:text-primary transition-colors shrink-0" />
+                            </div>
+                            <input
+                              type="date"
+                              value={dayItem.isoDate || toIsoDate(dayItem.date, startDate, idx)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val) {
+                                  handleDayIsoDateChange(idx, val);
+                                }
+                              }}
+                              onClick={(e) => {
+                                try {
+                                  e.currentTarget.showPicker?.();
+                                } catch {}
+                              }}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              title="Click to select date"
+                            />
+                          </div>
+
                           <Input
                             value={dayItem.theme || ''}
                             onChange={(e) => handleDayThemeChange(idx, e.target.value)}

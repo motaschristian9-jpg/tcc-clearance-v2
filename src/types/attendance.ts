@@ -3,6 +3,7 @@ export type EventDay = 'Day 1' | 'Day 2' | 'Day 3' | 'Day 4' | 'Day 5' | (string
 export interface EventDayConfig {
   day: EventDay;
   date: string;
+  isoDate?: string;
   theme?: string;
 }
 
